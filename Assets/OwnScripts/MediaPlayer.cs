@@ -21,6 +21,7 @@ limitations under the License.
 
 using UnityEngine;
 using System.Collections;					// required for Coroutines
+using System.Collections.Generic;           // required for Lists
 using System.Runtime.InteropServices;		// required for DllImport
 using System;								// required for IntPtr
 using System.IO;							// required for File
@@ -65,24 +66,26 @@ Implementation:
 
 public class MediaPlayer : MonoBehaviour
 {
-    public string               movieName = string.Empty;           //Name of the video which is currently played
-    private bool                videoPaused = false;                //Is the video currently paused
-    private bool                videoPausedBeforeAppPause = false;  //Is the video currently paused because the app is paused
+    private List<videoList>     movieList = new List<videoList>();      //List of all available videos with their paths
 
-    private string              mediaFullPath = string.Empty;       //Path of video which is currently played
-    private bool                startedVideo = false;               //Is the video started
+    private string              movieName = string.Empty;               //Name of the video which is currently played
+    private bool                videoPaused = false;                    //Is the video currently paused
+    private bool                videoPausedBeforeAppPause = false;      //Is the video currently paused because the app is paused
+
+    private string              mediaFullPath = string.Empty;           //Path of video which is currently played
+    private bool                startedVideo = false;                   //Is the video started
 
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-	private Texture2D           nativeTexture = null;               //Instance of texture
-	private IntPtr	            nativeTexId = IntPtr.Zero;          //Pointer for TextureID
-	private int		            textureWidth = 2880;                //Hardcoded width of video player
-	private int 	            textureHeight = 1440;               //Hardcoded height of video player
-	private AndroidJavaObject   mediaPlayer = null;                 //Instance of AndroidMediaPlayer
+	private Texture2D           nativeTexture = null;                   //Instance of texture
+	private IntPtr	            nativeTexId = IntPtr.Zero;              //Pointer for TextureID
+	private int		            textureWidth = 2880;                    //Hardcoded width of video player
+	private int 	            textureHeight = 1440;                   //Hardcoded height of video player
+	private AndroidJavaObject   mediaPlayer = null;                     //Instance of AndroidMediaPlayer
 #else
-    private MovieTexture        movieTexture = null;                //Texture on which the video is played
-    private AudioSource         audioEmitter = null;                //AudioEmitter which plays the video sound
+    private MovieTexture        movieTexture = null;                    //Texture on which the video is played
+    private AudioSource         audioEmitter = null;                    //AudioEmitter which plays the video sound
 #endif
-    private Renderer            mediaRenderer = null;               //Renderer for the played video
+    private Renderer            mediaRenderer = null;                   //Renderer for the played video
 
     private enum MediaSurfaceEventType
     {
@@ -90,6 +93,18 @@ public class MediaPlayer : MonoBehaviour
         Shutdown = 1,
         Update = 2,
         Max_EventType
+    };
+
+    public class videoList
+    {
+        public String movie;
+        public String path;
+
+        public videoList(String video, String videoPath)
+        {
+            movie = video;
+            path = videoPath;
+        }
     };
 
     /// <summary>
@@ -144,7 +159,25 @@ public class MediaPlayer : MonoBehaviour
 
         if (movieName == string.Empty)
         {
-            Debug.LogError("No media file name provided");
+            String absPath;
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+            //Absolute path of the video libary on android devices
+            absPath = "/Movies/";
+#else
+            //Absolute path of the video libary on windows devices
+            absPath = "C:/Users/" + Environment.UserName + "/Videos/";
+#endif
+            //Get all mp4-files in the specific video folder
+            String[] files = Directory.GetFiles(absPath, "*.mp4");
+
+            //Add all detected files to the list of available movies
+            foreach (String str in files)
+            {
+                movieList.Add(new videoList(str.Substring(str.LastIndexOf("/") + 1), str));
+            }
+
+            Debug.Log("Detected movies to list of available movies added");
         }
         else
         {
@@ -166,9 +199,19 @@ public class MediaPlayer : MonoBehaviour
     /// </summary>
     IEnumerator RetrieveStreamingAsset(string mediaFileName)
     {
+
 #if UNITY_ANDROID && !UNITY_EDITOR
 		string streamingMediaPath = Application.streamingAssetsPath + "/" + mediaFileName;
-		string persistentPath = Application.persistentDataPath + "/" + mediaFileName;
+        string persistentPath = "";
+        foreach (videoList vl in movieList)
+        {
+            if(vl.movie == mediaFileName)
+            {
+                persistentPath = vl.path;
+                break;
+            }
+        }
+		//string persistentPath = Application.persistentDataPath + "/" + mediaFileName;       //<-- HIER!!! VIDEOPFAD ÄNDERN!!!
 		if (!File.Exists(persistentPath))
 		{
 			WWW wwwReader = new WWW(streamingMediaPath);
@@ -184,7 +227,19 @@ public class MediaPlayer : MonoBehaviour
 		mediaFullPath = persistentPath;
 #else
         string mediaFileNameOgv = Path.GetFileNameWithoutExtension(mediaFileName) + ".ogv";
-        string streamingMediaPath = "file:///" + Application.streamingAssetsPath + "/" + mediaFileNameOgv;
+        string streamingMediaPath = "file://";
+        foreach (videoList vl in movieList)
+        {
+            if (vl.movie.Substring(0, vl.movie.LastIndexOf(".")) == mediaFileName)
+            {
+                streamingMediaPath = streamingMediaPath + vl.path;
+                streamingMediaPath = streamingMediaPath.Substring(0, streamingMediaPath.LastIndexOf("/"));
+                streamingMediaPath = streamingMediaPath + "/" + mediaFileNameOgv;
+                break;
+                Debug.Log(streamingMediaPath);
+            }
+        }
+        //string streamingMediaPath = "file:///" + Application.streamingAssetsPath + "/" + mediaFileNameOgv;           //<-- HIER!!! VIDEOPFAD ÄNDERN!!!
         WWW wwwReader = new WWW(streamingMediaPath);
         yield return wwwReader;
 
@@ -281,9 +336,10 @@ public class MediaPlayer : MonoBehaviour
 #endif
     }
 
-    public void StartVideo()
+    public String StartVideo()
     {
         StartCoroutine(RetrieveStreamingAsset(movieName));
+        return movieName;
     }
 
     public TimeSpan GetCurrentPos()
@@ -322,6 +378,16 @@ public class MediaPlayer : MonoBehaviour
     public String GetMovieName()
     {
         return movieName;
+    }
+
+    public List<videoList> GetMovieList()
+    {
+        return movieList;
+    }
+
+    public String GetMovieListMovie(int index)
+    {
+        return movieList[index].movie;
     }
 
     public void Reverse()

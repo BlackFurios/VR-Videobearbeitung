@@ -826,7 +826,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc1fc0c453b6364dbb92cc45d06b59a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movieName: HenryShort.mp4
+  movieName: 
 --- !u!114 &273906441
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2714,7 +2714,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: HenryShort.mp4
+  m_Text: 
 --- !u!222 &1486077265
 CanvasRenderer:
   m_ObjectHideFlags: 0

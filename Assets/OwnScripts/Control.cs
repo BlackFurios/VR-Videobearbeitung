@@ -56,12 +56,14 @@ public class Control : MonoBehaviour
     // Use this for initialization
     void Start ()
     {
-        //Fill movieList with detected videos
-        videoList.Add("HenryShort");
-        videoList.Add("360Surfer");
-
         mh = GetComponent<ManageHighlights>();
         mp = GetComponent<MediaPlayer>();
+
+        for(int i = 0; i < mp.GetMovieList().Count; i++)
+        {
+            //Fill movieList with detected videos
+            videoList.Add(mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")));
+        }
 
         //Search for VRMenu and highlightMenu
         foreach(Canvas c in FindObjectsOfType<Canvas>())
@@ -179,7 +181,7 @@ public class Control : MonoBehaviour
 
                         //Set the chosen movie in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
-                        mp.StartVideo();
+                        StartCoroutine(ShowText(mp.StartVideo()));
                         break;
                     case "Save":
                         stMenu.enabled = false;
@@ -371,7 +373,7 @@ public class Control : MonoBehaviour
 
                         //Set the chosen movie in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
-                        mp.StartVideo();
+                        StartCoroutine(ShowText(mp.StartVideo()));
                         break;
                     case "Save":
                         stMenu.enabled = false;
