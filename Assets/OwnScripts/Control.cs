@@ -26,6 +26,8 @@ public class Control : MonoBehaviour
 
     private List<String>        videoList = new List<string>();     //List of currently possible movies
 
+    private bool                forwarding = false;                 //Is the video currently forwarding
+    private bool                reversing = false;                  //Is the video currently reversing
     private bool                opened = false;                     //Is the drodown list opened
     private bool                pausing = false;                    //Is the video currently paused
     private int                 showTime = 1;                       //How long texts should be shown in seconds
@@ -369,16 +371,18 @@ public class Control : MonoBehaviour
             ConfigureMenu(stMenu, !stMenu.enabled);
         }
 
-        if (Input.GetButton("L1-Windows"))
+        while (Input.GetButton("L1-Windows"))
         {
             //Reversing current video
-            mp.Reverse();
+            reversing = !reversing;
+            mp.Reverse(reversing);
         }
 
-        if (Input.GetButton("R1-Windows"))
+        while (Input.GetButton("R1-Windows"))
         {
             //Forwarding current video
-            mp.Forward();
+            forwarding = !forwarding;
+            mp.Forward(forwarding);
         }
 
         if (Input.GetButtonDown("L2-Windows"))
