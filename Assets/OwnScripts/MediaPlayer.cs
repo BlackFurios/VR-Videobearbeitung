@@ -24,7 +24,10 @@ using System.Collections;					// required for Coroutines
 using System.Collections.Generic;           // required for Lists
 using System.Runtime.InteropServices;		// required for DllImport
 using System;								// required for IntPtr
-using System.IO;							// required for File
+using System.IO;                            // required for File
+using MediaToolkit;                         // required for VideoConversion
+using MediaToolkit.Model;                   // required for VideoConversion
+using MediaToolkit.Options;                 // required for VideoConversion
 
 /************************************************************************************
 Usage:
@@ -163,7 +166,7 @@ public class MediaPlayer : MonoBehaviour
 
 #if UNITY_ANDROID && !UNITY_EDITOR
             //Absolute path of the video libary on android devices
-            absPath = "/Movies/";
+            absPath = "/storage/emulated/0/Movies/";
 #else
             //Absolute path of the video libary on windows devices
             absPath = "C:/Users/" + Environment.UserName + "/Videos/";
@@ -175,6 +178,25 @@ public class MediaPlayer : MonoBehaviour
             foreach (String str in files)
             {
                 movieList.Add(new videoList(str.Substring(str.LastIndexOf("/") + 1), str));
+#if UNITY_ANDROID && !UNITY_EDITOR
+
+#else
+                var inputFile = new MediaFile { Filename = str };
+                var outputFile = new MediaFile { Filename = str.Substring(0, str.LastIndexOf(".")) + ".ogv" };
+
+                var conversionOptions = new ConversionOptions
+                {
+                    MaxVideoDuration = TimeSpan.FromSeconds(30),
+                    VideoAspectRatio = VideoAspectRatio.R16_9,
+                    VideoSize = VideoSize.Hd1080,
+                    AudioSampleRate = AudioSampleRate.Hz44100
+                };
+
+                using (var engine = new Engine())
+                {
+                    engine.Convert(inputFile, outputFile, conversionOptions);
+                }
+#endif
             }
 
             Debug.Log("Detected movies to list of available movies added");
@@ -201,16 +223,18 @@ public class MediaPlayer : MonoBehaviour
     {
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-		string streamingMediaPath = Application.streamingAssetsPath + "/" + mediaFileName;
+		string streamingMediaPath = "file://";
         string persistentPath = "";
-        foreach (videoList vl in movieList)
+         foreach (videoList vl in movieList)
         {
-            if(vl.movie == mediaFileName)
+            if(vl.movie.Substring(0, vl.movie.LastIndexOf(".")) == mediaFileName)
             {
+                streamingMediaPath = vl.path;
                 persistentPath = vl.path;
                 break;
             }
         }
+
 		//string persistentPath = Application.persistentDataPath + "/" + mediaFileName;       //<-- HIER!!! VIDEOPFAD ÄNDERN!!!
 		if (!File.Exists(persistentPath))
 		{
@@ -236,7 +260,6 @@ public class MediaPlayer : MonoBehaviour
                 streamingMediaPath = streamingMediaPath.Substring(0, streamingMediaPath.LastIndexOf("/"));
                 streamingMediaPath = streamingMediaPath + "/" + mediaFileNameOgv;
                 break;
-                Debug.Log(streamingMediaPath);
             }
         }
         //string streamingMediaPath = "file:///" + Application.streamingAssetsPath + "/" + mediaFileNameOgv;           //<-- HIER!!! VIDEOPFAD ÄNDERN!!!
@@ -338,6 +361,10 @@ public class MediaPlayer : MonoBehaviour
 
     public String StartVideo()
     {
+        //Unpauses the media player before starting the video
+        SetPaused(false);
+
+        //Starts the video
         StartCoroutine(RetrieveStreamingAsset(movieName));
         return movieName;
     }

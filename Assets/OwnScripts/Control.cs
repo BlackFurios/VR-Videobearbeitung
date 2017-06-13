@@ -17,6 +17,7 @@ public class Control : MonoBehaviour
     private Canvas              vrMenu;                             //Instance of the VRMenu object
     private Canvas              hlMenu;                             //Instance of the HighlightMenu object
     private Canvas              stMenu;                             //Instance of the StartMenu object
+    private Canvas              dcMenu;                             //Instance of the DisconnectMenu object
     
     private RaycastHit          hit;                                //Point where the raycast hits
 
@@ -76,11 +77,17 @@ public class Control : MonoBehaviour
             {
                 hlMenu = c;
 
-                hlMenu.enabled = false;
+                ConfigureMenu(hlMenu, false);
             }
             if (c.name == "StartMenu")
             {
                 stMenu = c;
+            }
+            if (c.name == "DisconnectMenu")
+            {
+                dcMenu = c;
+
+                ConfigureMenu(dcMenu, false);
             }
         }
 
@@ -112,6 +119,10 @@ public class Control : MonoBehaviour
         {
             //Rewinding current video
             mp.Rewind();
+
+            //Unpauses current video
+            pausing = false;
+            mp.SetPaused(pausing);
         }
         
         if (Input.GetButtonDown("X-Android"))
@@ -121,7 +132,7 @@ public class Control : MonoBehaviour
             mp.SetPaused(pausing);
 
             //Opens StartMenu to switch video
-            stMenu.enabled = !stMenu.enabled;
+            ConfigureMenu(stMenu, !stMenu.enabled);
         }
 
         if (Input.GetButtonDown("L2-Android"))
@@ -137,10 +148,14 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("R2-Android"))
         {
             //Check if all menus are disabled and if the hit object is a highlight
-            if (hlMenu.enabled == false && stMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            if (dcMenu.enabled == false && hlMenu.enabled == false && stMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
+                //Pauses current video
+                pausing = true;
+                mp.SetPaused(pausing);
+
                 //If the highlightMenu is disabled, enables it and shows it infront of the selected highlight
-                hlMenu.enabled = true;
+                ConfigureMenu(hlMenu, true);
 
                 //Adjust the highlightMenu with the selected highlight
                 Quaternion rot = new Quaternion(hit.transform.gameObject.transform.rotation.x, hit.transform.gameObject.transform.rotation.y, hit.transform.gameObject.transform.rotation.z, hit.transform.gameObject.transform.rotation.w);
@@ -150,7 +165,7 @@ public class Control : MonoBehaviour
                 hlMenu.transform.rotation = rot;
                 hlMenu.transform.localRotation = Quaternion.Euler(hlMenu.transform.localEulerAngles.x - 90, hlMenu.transform.localEulerAngles.y, hlMenu.transform.localEulerAngles.z);
                 hlMenu.transform.position = pos;
-                hlMenu.transform.localPosition = new Vector3(hlMenu.transform.localPosition.x, hlMenu.transform.localPosition.y, hlMenu.transform.localPosition.z + 2);
+                hlMenu.transform.localPosition = new Vector3(hlMenu.transform.localPosition.x, hlMenu.transform.localPosition.y, hlMenu.transform.localPosition.z + 5);
 
                 //Make the hit highlight the currently selected highlight
                 selectedObject = hit.transform.gameObject;
@@ -174,7 +189,7 @@ public class Control : MonoBehaviour
                         opened = true;
                         break;
                     case "PlayVideo":
-                        stMenu.enabled = false;
+                        ConfigureMenu(stMenu, false);
 
                         //Load save file for currently selected video
                         Load(list.options[list.value].text);
@@ -184,7 +199,7 @@ public class Control : MonoBehaviour
                         StartCoroutine(ShowText(mp.StartVideo()));
                         break;
                     case "Save":
-                        stMenu.enabled = false;
+                        ConfigureMenu(stMenu, false);
                         
                         //Save file for currently selected video
                         Save(list.options[list.value].text);
@@ -219,7 +234,7 @@ public class Control : MonoBehaviour
                 list.RefreshShownValue();
             }
             //Check if the highlightMenu is enabled
-            else if (hlMenu.enabled == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            else if (dcMenu.enabled == false && hlMenu.enabled == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check which button of the highlightMenu was clicked
                 switch (hit.transform.gameObject.name)
@@ -227,12 +242,11 @@ public class Control : MonoBehaviour
                     case "Connect":
                         //Connects the currently selected to another highlight, if possible
                         StartCoroutine(ShowText(mh.ConnectItems(selectedObject)));
-                        hlMenu.enabled = false;
+                        ConfigureMenu(hlMenu, false);
                         break;
                     case "Disconnect":
                         //Disonnects the currently selected and another highlight
-                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject)));
-                        hlMenu.enabled = false;
+                        ConfigureMenu(dcMenu, true);
                         break;
                     case "GetInfo":
                         //Gets all information about the currently selected highlight
@@ -245,16 +259,63 @@ public class Control : MonoBehaviour
 
                         StartCoroutine(ShowText(info));
 
-                        hlMenu.enabled = false;
+                        ConfigureMenu(hlMenu, false);
                         break;
                     case "Delete":
                         //Deletes the currently selected highlight
                         mh.DeleteItem(hit.transform.gameObject);
-                        hlMenu.enabled = false;
+                        ConfigureMenu(hlMenu, false);
                         break;
                     case "Close":
                         //Closes the highlightMenu
-                        hlMenu.enabled = false;
+                        ConfigureMenu(hlMenu, false);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            //Check if the highlightMenu is enabled
+            else if (dcMenu.enabled == true && hlMenu.enabled == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                //Check which button of the highlightMenu was clicked
+                switch (hit.transform.gameObject.name)
+                {
+                    case "DisconnectPrev":
+                        //Close all opened Menus
+                        ConfigureMenu(dcMenu, false);
+                        ConfigureMenu(hlMenu, false);
+
+                        //Starts Waiting process for user click
+                        StartCoroutine(WaitForButton());
+
+                        //
+                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Prev")));
+                        break;
+                    case "DisconnectNext":
+                        //Close all opened Menus
+                        ConfigureMenu(dcMenu, false);
+                        ConfigureMenu(hlMenu, false);
+
+                        //Starts Waiting process for user click
+                        StartCoroutine(WaitForButton());
+
+                        //
+                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Next")));
+                        break;
+                    case "DisconnectBoth":
+                        //Close all opened Menus
+                        ConfigureMenu(dcMenu, false);
+                        ConfigureMenu(hlMenu, false);
+
+                        //Starts Waiting process for user click
+                        StartCoroutine(WaitForButton());
+
+                        //
+                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Both")));
+                        break;
+                    case "Close":
+                        //Closes the disconnectMenu
+                        ConfigureMenu(dcMenu, false);
                         break;
                     default:
                         break;
@@ -292,6 +353,10 @@ public class Control : MonoBehaviour
         {
             //Rewinding current video
             mp.Rewind();
+
+            //Unpauses current video
+            pausing = false;
+            mp.SetPaused(pausing);
         }
 
         if (Input.GetButtonDown("X-Windows"))
@@ -301,7 +366,7 @@ public class Control : MonoBehaviour
             mp.SetPaused(pausing);
 
             //Opens StartMenu to switch video
-            stMenu.enabled = !stMenu.enabled;
+            ConfigureMenu(stMenu, !stMenu.enabled);
         }
 
         if (Input.GetButton("L1-Windows"))
@@ -329,10 +394,14 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("R2-Windows"))
         {
             //Check if all menus are disabled and if the hit object is a highlight
-            if (hlMenu.enabled == false && stMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            if (dcMenu.enabled == false && hlMenu.enabled == false && stMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
+                //Pauses current video
+                pausing = true;
+                mp.SetPaused(pausing);
+
                 //If the highlightMenu is disabled, enables it and shows it infront of the selected highlight
-                hlMenu.enabled = true;
+                ConfigureMenu(hlMenu,true);
 
                 //Adjust the highlightMenu with the selected highlight
                 Quaternion rot = new Quaternion(hit.transform.gameObject.transform.rotation.x, hit.transform.gameObject.transform.rotation.y, hit.transform.gameObject.transform.rotation.z, hit.transform.gameObject.transform.rotation.w);
@@ -342,7 +411,7 @@ public class Control : MonoBehaviour
                 hlMenu.transform.rotation = rot;
                 hlMenu.transform.localRotation = Quaternion.Euler(hlMenu.transform.localEulerAngles.x - 90, hlMenu.transform.localEulerAngles.y, hlMenu.transform.localEulerAngles.z);
                 hlMenu.transform.position = pos;
-                hlMenu.transform.localPosition = new Vector3(hlMenu.transform.localPosition.x, hlMenu.transform.localPosition.y, hlMenu.transform.localPosition.z + 2);
+                hlMenu.transform.localPosition = new Vector3(hlMenu.transform.localPosition.x, hlMenu.transform.localPosition.y, hlMenu.transform.localPosition.z * 0.9f);
 
                 //Make the hit highlight the currently selected highlight
                 selectedObject = hit.transform.gameObject;
@@ -366,7 +435,7 @@ public class Control : MonoBehaviour
                         opened = true;
                         break;
                     case "PlayVideo":
-                        stMenu.enabled = false;
+                        ConfigureMenu(stMenu, false);
 
                         //Load save file for currently selected video
                         Load(list.options[list.value].text);
@@ -376,8 +445,8 @@ public class Control : MonoBehaviour
                         StartCoroutine(ShowText(mp.StartVideo()));
                         break;
                     case "Save":
-                        stMenu.enabled = false;
-                        
+                        ConfigureMenu(stMenu, false);
+
                         //Save file for currently selected video
                         Save(list.options[list.value].text);
                         break;
@@ -411,7 +480,7 @@ public class Control : MonoBehaviour
                 list.RefreshShownValue();
             }
             //Check if the highlightMenu is enabled
-            else if (hlMenu.enabled == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            else if (dcMenu.enabled == false && hlMenu.enabled == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check which button of the highlightMenu was clicked
                 switch (hit.transform.gameObject.name)
@@ -419,12 +488,11 @@ public class Control : MonoBehaviour
                     case "Connect":
                         //Connects the currently selected to another highlight, if possible
                         StartCoroutine(ShowText(mh.ConnectItems(selectedObject)));
-                        hlMenu.enabled = false;
+                        ConfigureMenu(hlMenu, false);
                         break;
                     case "Disconnect":
                         //Disonnects the currently selected and another highlight
-                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject)));
-                        hlMenu.enabled = false;
+                        ConfigureMenu(dcMenu, true);
                         break;
                     case "GetInfo":
                         //Gets all information about the currently selected highlight
@@ -436,17 +504,64 @@ public class Control : MonoBehaviour
                         info = info + "," + selectedObject.GetComponent<HighlightMemory>().getNext();
 
                         StartCoroutine(ShowText(info));
-
-                        hlMenu.enabled = false;
+                        
+                        ConfigureMenu(hlMenu, false);
                         break;
                     case "Delete":
                         //Deletes the currently selected highlight
-                        mh.DeleteItem(hit.transform.gameObject);
-                        hlMenu.enabled = false;
+                        mh.DeleteItem(selectedObject);
+                        ConfigureMenu(hlMenu, false);
                         break;
                     case "Close":
                         //Closes the highlightMenu
-                        hlMenu.enabled = false;
+                        ConfigureMenu(hlMenu, false);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            //Check if the highlightMenu is enabled
+            else if (dcMenu.enabled == true && hlMenu.enabled == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                //Check which button of the highlightMenu was clicked
+                switch (hit.transform.gameObject.name)
+                {
+                    case "DisconnectPrev":
+                        //Close all opened Menus
+                        ConfigureMenu(dcMenu, false);
+                        ConfigureMenu(hlMenu, false);
+
+                        //Starts Waiting process for user click
+                        StartCoroutine(WaitForButton());
+
+                        //
+                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Prev")));
+                        break;
+                    case "DisconnectNext":
+                        //Close all opened Menus
+                        ConfigureMenu(dcMenu, false);
+                        ConfigureMenu(hlMenu, false);
+
+                        //Starts Waiting process for user click
+                        StartCoroutine(WaitForButton());
+
+                        //
+                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Next")));
+                        break;
+                    case "DisconnectBoth":
+                        //Close all opened Menus
+                        ConfigureMenu(dcMenu, false);
+                        ConfigureMenu(hlMenu, false);
+
+                        //Starts Waiting process for user click
+                        StartCoroutine(WaitForButton());
+
+                        //
+                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Both")));
+                        break;
+                    case "Close":
+                        //Closes the disconnectMenu
+                        ConfigureMenu(dcMenu, false);
                         break;
                     default:
                         break;
@@ -630,7 +745,7 @@ public class Control : MonoBehaviour
         }
     }
 
-    Vector2 ParseToVector2 (String val)
+    private Vector2 ParseToVector2 (String val)
     {
         //Get rid of both brackets
         String str = val.Substring(1, val.Length - 2);
@@ -642,7 +757,7 @@ public class Control : MonoBehaviour
         return new Vector2(float.Parse(sArray[0]), float.Parse(sArray[1]));
     }
 
-    Vector3 ParseToVector3(String val)
+    private Vector3 ParseToVector3(String val)
     {
         //Get rid of both brackets
         String str = val.Substring(1, val.Length - 2);
@@ -663,6 +778,21 @@ public class Control : MonoBehaviour
         return new Vector3(float.Parse(x), float.Parse(y), float.Parse(z));
     }
 
+    private void ConfigureMenu (Canvas menu, bool status)
+    {
+        //Enable/Disable every collider this menu has
+        foreach (Transform child in menu.transform)
+        {
+            if (child.name != "DisconnectMenu")
+            {
+                child.GetComponent<Collider>().enabled = status;
+            }
+        }
+
+        //Enable/Disable this menu
+        menu.enabled = status;
+    }
+
     //Shows text for certain time in world space
     IEnumerator ShowText(String text)
     {
@@ -674,6 +804,18 @@ public class Control : MonoBehaviour
         vrMenu.GetComponent<Text>().text = text;
         yield return new WaitForSecondsRealtime(showTime);
         vrMenu.GetComponent<Text>().text = "";
+#endif
+    }
+
+    //Waits for Input from R2
+    IEnumerator WaitForButton()
+    {
+#if (UNITY_ANDROID && !UNITY_EDITOR)
+        while (!Input.GetButtonDown("R2-Android"))
+            yield return null;
+#elif (UNITY_STANDALONE_WIN || UNITY_EDITOR)
+        while (!Input.GetButtonDown("R2-Windows"))
+            yield return null;
 #endif
     }
 }

@@ -11,7 +11,7 @@ public class ManageHighlights : MonoBehaviour
     private List<GameObject>    hList = new List<GameObject>();     //List of all managed highlights
     public GameObject           highLight;                          //Highlight prefab to be managed
 
-    private float               range = 2;                          //Range in which no other highlight should be spawned
+    private float               range = 3;                          //Range in which no other highlight should be spawned
     private float               timeRange = 5;                      //The time range in which this highlight should be shown in the UI
 
     //Use this for initialization
@@ -92,12 +92,13 @@ public class ManageHighlights : MonoBehaviour
         }
     }
 
-    //
+    //Get item from highlight list
     public GameObject GetItem(int index)
     {
         return hList[index];
     }
 
+    //Get complete highlight list
     public List<GameObject> GetList()
     {
         return hList;
@@ -137,6 +138,8 @@ public class ManageHighlights : MonoBehaviour
             current.GetComponent<HighlightMemory>().setType(type);
             current.GetComponent<HighlightMemory>().setTexPos(texPos);
             current.GetComponent<HighlightMemory>().setVideo(video);
+            current.GetComponent<HighlightMemory>().setPrev(null);
+            current.GetComponent<HighlightMemory>().setNext(null);
 
             return "Highlight successfully created";
         }
@@ -161,19 +164,26 @@ public class ManageHighlights : MonoBehaviour
     //Removes highlight from the list of managed highlights and then destroys it
     public void DeleteItem(GameObject current)
     {
+        if (current.GetComponent<HighlightMemory>().getNext() != null && current.GetComponent<HighlightMemory>().getPrev() != null)
+        {
+            //
+            current.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(current.GetComponent<HighlightMemory>().getPrev());
+            current.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(current.GetComponent<HighlightMemory>().getNext());
+        }
         //Check if highlight has next highlight
-        if (current.GetComponent<HighlightMemory>().getNext() != null)
+        else if (current.GetComponent<HighlightMemory>().getNext() != null)
         {
             //Delete highlight as previous highlight from next highlight
             current.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
         }
+
         //Check if highlight has previous highlight
         else if (current.GetComponent<HighlightMemory>().getPrev() != null)
         {
             //Delete highlight as next highlight from previous highlight
             current.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
         }
-
+        
         //Delete highlight from list and destroy the highlight
         hList.RemoveAt(hList.IndexOf(current));
         Destroy(current);
@@ -182,9 +192,6 @@ public class ManageHighlights : MonoBehaviour
     public String ConnectItems(GameObject selected)
     {
         RaycastHit hit;
-
-        //Starts Waiting process for user click
-        StartCoroutine(WaitForButton());
 
         //Check if Raycast hits a highlight
         if(Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
@@ -241,28 +248,61 @@ public class ManageHighlights : MonoBehaviour
             }
             else
             {
-                return "No timely seperate highlights selected";
+                return "No seperate highlights selected";
             }
         }
         else
         {
-            return "No highlight to disconnect selected";
+            return "No highlight to connect to selected";
         }
     }
 
-    public String DisconnectItems(GameObject selected)
+    public String DisconnectItems(GameObject selected, String mode)
     {
         if (selected.GetComponent<HighlightMemory>().getPrev() != null || selected.GetComponent<HighlightMemory>().getNext() != null)
         {
             RaycastHit hit;
 
-            //Starts Waiting process for user click
-            StartCoroutine(WaitForButton());
-
             //Check if Raycast hits a highlight
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 var other = hit.transform.gameObject;
+
+                switch (mode)
+                {
+                    case "Prev":
+                        //
+                        if (selected.GetComponent<HighlightMemory>().getPrev() != null)
+                        {
+                            //
+                            selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
+                            selected.GetComponent<HighlightMemory>().setPrev(null);
+                        }
+                        break;
+                    case "Next":
+                        //
+                        if (selected.GetComponent<HighlightMemory>().getNext() != null)
+                        {
+                            //
+                            selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
+                            selected.GetComponent<HighlightMemory>().setNext(null);
+                        }
+                        break;
+                    case "Both":
+                        //
+                        if (selected.GetComponent<HighlightMemory>().getPrev() != null && selected.GetComponent<HighlightMemory>().getNext() != null)
+                        {
+                            selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
+                            selected.GetComponent<HighlightMemory>().setPrev(null);
+
+                            //
+                            selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
+                            selected.GetComponent<HighlightMemory>().setNext(null);
+                        }
+                        break;
+                    default:
+                        break;
+                }
 
                 //Checks if currently selected highlight comes after the other highlight
                 if (selected.GetComponent<HighlightMemory>().getTime() > other.GetComponent<HighlightMemory>().getTime())
@@ -296,17 +336,5 @@ public class ManageHighlights : MonoBehaviour
         {
             return "Slected highlight is not connected to anything";
         }
-    }
-
-    //Waits for Input from R2
-    IEnumerator WaitForButton()
-    {
-#if (UNITY_ANDROID && !UNITY_EDITOR)
-        while (!Input.GetButtonDown("R2-Android"))
-            yield return null;
-#elif (UNITY_STANDALONE_WIN || UNITY_EDITOR)
-        while (!Input.GetButtonDown("R2-Windows"))
-            yield return null;
-#endif
     }
 }
