@@ -25,9 +25,6 @@ using System.Collections.Generic;           // required for Lists
 using System.Runtime.InteropServices;		// required for DllImport
 using System;								// required for IntPtr
 using System.IO;                            // required for File
-using MediaToolkit;                         // required for VideoConversion
-using MediaToolkit.Model;                   // required for VideoConversion
-using MediaToolkit.Options;                 // required for VideoConversion
 using UnityEngine.Video;
 
 /************************************************************************************
@@ -421,22 +418,18 @@ public class MediaPlayer : MonoBehaviour
         {
             try
 			{
-                AndroidJavaObject params = new AndroidJavaObject("android/media/PlaybackParams");
-                
                 if(mode)
                 {
-                    params.Call("setSpeed", 2.0f);
-                    mediaPlayer.Call("setPlaybackParams", params);
+                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") + 50);
                 }
                 else
                 {
-                    params.Call("setSpeed", 1.0f);
-                    mediaPlayer.Call("setPlaybackParams", params);
+                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") + 50);
                 }
 			}
 			catch (Exception e)
 			{
-				Debug.Log("Failed to stop mediaPlayer with message " + e.Message);
+                Debug.Log("Failed to stop mediaPlayer with message " + e.Message);
 			}
         }
 #else

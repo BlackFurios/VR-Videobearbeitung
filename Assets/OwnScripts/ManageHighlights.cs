@@ -34,10 +34,18 @@ public class ManageHighlights : MonoBehaviour
             else
             {
                 //Check if the next or previous chain highlight of this highlight is shown if it has one
-                if (g.GetComponent<HighlightMemory>().getNext() != null || g.GetComponent<HighlightMemory>().getPrev() != null && g.GetComponent<HighlightMemory>().getNext().GetComponent<Renderer>().enabled == true || g.GetComponent<HighlightMemory>().getPrev().GetComponent<Renderer>().enabled == true)
+                if (g.GetComponent<HighlightMemory>().getNext() != null || g.GetComponent<HighlightMemory>().getPrev() != null)
                 {
-                    //Show this highlight
-                    g.GetComponent<Renderer>().enabled = true;
+                    if (g.GetComponent<HighlightMemory>().getNext().GetComponent<Renderer>().enabled == true || g.GetComponent<HighlightMemory>().getPrev().GetComponent<Renderer>().enabled == true)
+                    {
+                        //Show this highlight
+                        g.GetComponent<Renderer>().enabled = true;
+                    }
+                    else
+                    {
+                        //Do not show this highlight anymore
+                        g.GetComponent<Renderer>().enabled = false;
+                    }
                 }
                 else
                 {

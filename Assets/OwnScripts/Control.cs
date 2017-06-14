@@ -30,7 +30,7 @@ public class Control : MonoBehaviour
     private bool                reversing = false;                  //Is the video currently reversing
     private bool                opened = false;                     //Is the drodown list opened
     private bool                pausing = false;                    //Is the video currently paused
-    private int                 showTime = 1;                       //How long texts should be shown in seconds
+    private int                 showTime = 3;                       //How long texts should be shown in seconds
 
     public class localId
     {
@@ -140,7 +140,7 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("L2-Android"))
         {
             //Check if raycast hits the media sphere
-            if (dcMenu.enabled == false || hlMenu.enabled == false || stMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && dcMenu.enabled == false || hlMenu.enabled == false || stMenu.enabled == false)
             {
                 //Starts creation of the new highlight
                 StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", hit.textureCoord, mp.GetMovieName())));
@@ -157,7 +157,7 @@ public class Control : MonoBehaviour
                 mp.SetPaused(pausing);
 
                 //If the highlightMenu is disabled, enables it and shows it infront of the selected highlight
-                ConfigureMenu(hlMenu, true);
+                ConfigureMenu(hlMenu,true);
 
                 //Adjust the highlightMenu with the selected highlight
                 Quaternion rot = new Quaternion(hit.transform.gameObject.transform.rotation.x, hit.transform.gameObject.transform.rotation.y, hit.transform.gameObject.transform.rotation.z, hit.transform.gameObject.transform.rotation.w);
@@ -167,7 +167,7 @@ public class Control : MonoBehaviour
                 hlMenu.transform.rotation = rot;
                 hlMenu.transform.localRotation = Quaternion.Euler(hlMenu.transform.localEulerAngles.x - 90, hlMenu.transform.localEulerAngles.y, hlMenu.transform.localEulerAngles.z);
                 hlMenu.transform.position = pos;
-                hlMenu.transform.localPosition = new Vector3(hlMenu.transform.localPosition.x, hlMenu.transform.localPosition.y, hlMenu.transform.localPosition.z + 5);
+                hlMenu.transform.localPosition = new Vector3(hlMenu.transform.localPosition.x, hlMenu.transform.localPosition.y, hlMenu.transform.localPosition.z * 0.9f);
 
                 //Make the hit highlight the currently selected highlight
                 selectedObject = hit.transform.gameObject;
@@ -202,7 +202,7 @@ public class Control : MonoBehaviour
                         break;
                     case "Save":
                         ConfigureMenu(stMenu, false);
-                        
+
                         //Save file for currently selected video
                         Save(list.options[list.value].text);
                         break;
@@ -252,20 +252,26 @@ public class Control : MonoBehaviour
                         break;
                     case "GetInfo":
                         //Gets all information about the currently selected highlight
-                        String info = selectedObject.GetComponent<HighlightMemory>().getType();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getVideo();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getTime();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getTexPos();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getPrev();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getNext();
+                        String info = "Type:\t" + selectedObject.GetComponent<HighlightMemory>().getType();
+                        info = info + "\n" + "Video:\t" + selectedObject.GetComponent<HighlightMemory>().getVideo();
+                        info = info + "\n" + "Time:\t" + selectedObject.GetComponent<HighlightMemory>().getTime();
+                        info = info + "\n" + "Coordinates:\t" + selectedObject.GetComponent<HighlightMemory>().getTexPos();
+                        if (selectedObject.GetComponent<HighlightMemory>().getPrev() != null)
+                        {
+                            info = info + "\n" + "Previous:\t" + selectedObject.GetComponent<HighlightMemory>().getPrev();
+                        }
+                        if (selectedObject.GetComponent<HighlightMemory>().getNext() != null)
+                        {
+                            info = info + "\n" + "Next:\t" + selectedObject.GetComponent<HighlightMemory>().getNext();
+                        }
 
                         StartCoroutine(ShowText(info));
-
+                        
                         ConfigureMenu(hlMenu, false);
                         break;
                     case "Delete":
                         //Deletes the currently selected highlight
-                        mh.DeleteItem(hit.transform.gameObject);
+                        mh.DeleteItem(selectedObject);
                         ConfigureMenu(hlMenu, false);
                         break;
                     case "Close":
@@ -328,13 +334,15 @@ public class Control : MonoBehaviour
         if (Input.GetButton("L1-Android"))
         {
             //Reversing current video
-            mp.Reverse();
+            reversing = !reversing;
+            mp.Reverse(reversing);
         }
         
         if (Input.GetButton("R1-Android"))
         {
             //Forwarding current video
-            mp.Forward();
+            forwarding = !forwarding;
+            mp.Forward(forwarding);
         }
 #else
         //Joystick Controls for Windows
@@ -388,10 +396,17 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("L2-Windows"))
         {
             //Check if raycast hits the media sphere
-            if (dcMenu.enabled == false || hlMenu.enabled == false || stMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && dcMenu.enabled == false || hlMenu.enabled == false || stMenu.enabled == false)
             {
+                //Get the correct texture coordinates on the video texture
+                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                Vector2 coords = hit.textureCoord;
+                coords.x *= tex.width;
+                coords.y *= tex.height;
+
+                Debug.Log(hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture);
                 //Starts creation of the new highlight
-                StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", hit.textureCoord, mp.GetMovieName())));
+                StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
             }
         }
 
@@ -500,12 +515,18 @@ public class Control : MonoBehaviour
                         break;
                     case "GetInfo":
                         //Gets all information about the currently selected highlight
-                        String info = selectedObject.GetComponent<HighlightMemory>().getType();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getVideo();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getTime();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getTexPos();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getPrev();
-                        info = info + "," + selectedObject.GetComponent<HighlightMemory>().getNext();
+                        String info = "Type:\t" + selectedObject.GetComponent<HighlightMemory>().getType();
+                        info = info + "\n" + "Video:\t" + selectedObject.GetComponent<HighlightMemory>().getVideo();
+                        info = info + "\n" + "Time:\t" + selectedObject.GetComponent<HighlightMemory>().getTime();
+                        info = info + "\n" + "Coordinates:\t" + selectedObject.GetComponent<HighlightMemory>().getTexPos();
+                        if (selectedObject.GetComponent<HighlightMemory>().getPrev() != null)
+                        {
+                            info = info + "\n" + "Previous:\t" + selectedObject.GetComponent<HighlightMemory>().getPrev();
+                        }
+                        if (selectedObject.GetComponent<HighlightMemory>().getNext() != null)
+                        {
+                            info = info + "\n" + "Next:\t" + selectedObject.GetComponent<HighlightMemory>().getNext();
+                        }
 
                         StartCoroutine(ShowText(info));
                         
