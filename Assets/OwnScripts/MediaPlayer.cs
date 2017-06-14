@@ -70,8 +70,6 @@ Implementation:
 
 public class MediaPlayer : MonoBehaviour
 {
-    private VideoPlayer         vp;                                     //Instance of the video player script
-
     private List<videoList>     movieList = new List<videoList>();      //List of all available videos with their paths
 
     private string              movieName = string.Empty;               //Name of the video which is currently played
@@ -88,7 +86,7 @@ public class MediaPlayer : MonoBehaviour
 	private int 	            textureHeight = 1440;                   //Hardcoded height of video player
 	private AndroidJavaObject   mediaPlayer = null;                     //Instance of AndroidMediaPlayer
 #else
-    private MovieTexture        movieTexture = null;                    //Texture on which the video is played
+    private VideoPlayer         vp;                                     //Instance of the video player script
     private AudioSource         audioEmitter = null;                    //AudioEmitter which plays the video sound
 #endif
     private Renderer            mediaRenderer = null;                   //Renderer for the played video
@@ -299,7 +297,8 @@ public class MediaPlayer : MonoBehaviour
     void Update()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        if (!videoPaused) {
+        if (!videoPaused) 
+        {
             IntPtr currTexId = OVR_Media_Surface_GetNativeTexture();
             if (currTexId != nativeTexId)
             {
@@ -323,23 +322,6 @@ public class MediaPlayer : MonoBehaviour
 
     public String StartVideo()
     {
-        String path = "";
-
-        foreach (videoList vl in movieList)
-        {
-            if(vl.movie.Substring(0, vl.movie.LastIndexOf(".")) == movieName)
-            {
-                Debug.Log("Movie found: " + movieName);
-                path = vl.path;
-                break;
-            }
-        }
-        //Check if there is an ogv file
-        //if(!File.Exists(path.Substring(0, path.LastIndexOf(".")) + ".ogv"))
-        //{
-        //    StartCoroutine(ConvertToOGV(path));
-        //}
-
         //Unpauses the media player before starting the video
         SetPaused(false);
 
@@ -353,7 +335,7 @@ public class MediaPlayer : MonoBehaviour
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         return TimeSpan.FromMilliseconds(mediaPlayer.Call<int>("getCurrentPosition"));
 #elif (UNITY_STANDALONE_WIN || UNITY_EDITOR)
-        return TimeSpan.FromSeconds(movieTexture.duration);
+        return TimeSpan.FromSeconds(vp.time);
 #endif
     }
 
@@ -372,7 +354,10 @@ public class MediaPlayer : MonoBehaviour
 			}
         }
 #else
-
+        if (vp != null)
+        {
+            vp.time = pos;
+        }
 #endif
     }
 
@@ -405,7 +390,7 @@ public class MediaPlayer : MonoBehaviour
 			{
                 if(mode)
                 {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition")- 50);
+                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") - 50);
                 }
                 else
                 {
@@ -436,13 +421,17 @@ public class MediaPlayer : MonoBehaviour
         {
             try
 			{
+                AndroidJavaObject params = new AndroidJavaObject("android/media/PlaybackParams");
+                
                 if(mode)
                 {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") + 50);
+                    params.Call("setSpeed", 2.0f);
+                    mediaPlayer.Call("setPlaybackParams", params);
                 }
                 else
                 {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") + 50);
+                    params.Call("setSpeed", 1.0f);
+                    mediaPlayer.Call("setPlaybackParams", params);
                 }
 			}
 			catch (Exception e)
@@ -511,6 +500,7 @@ public class MediaPlayer : MonoBehaviour
             if (videoPaused)
             {
                 vp.Pause();
+
                 if (audioEmitter != null)
                 {
                     audioEmitter.Pause();
@@ -527,37 +517,6 @@ public class MediaPlayer : MonoBehaviour
         }
 #endif
     }
-
-    //IEnumerator ConvertToOGV(String path)
-    //{
-    //    var inputFile = new MediaFile { Filename = path };
-    //    var outputFile = new MediaFile { Filename = path.Substring(0, path.LastIndexOf(".")) + ".ogv" };
-
-    //    Debug.Log("No ogv file detected: Conversion is started now");
-
-    //    var conversionOptions = new ConversionOptions
-    //    {
-    //        MaxVideoDuration = TimeSpan.FromSeconds(30),
-    //        VideoAspectRatio = VideoAspectRatio.R16_9,
-    //        VideoSize = VideoSize.Hd1080,
-    //        AudioSampleRate = AudioSampleRate.Hz44100
-    //    };
-
-    //    using (var engine = new Engine())
-    //    {
-    //        engine.ConversionCompleteEvent += engine_ConversionCompleteEvent;
-
-    //        engine.Convert(inputFile, outputFile, conversionOptions);
-    //    }
-
-    //    Debug.Log("Conversion completed");
-    //    yield return null;
-    //}
-
-    //private void engine_ConversionCompleteEvent(object sender, ConversionCompleteEventArgs e)
-    //{
-    //    Debug.Log("Conversion complete!");
-    //}
 
     /// <summary>
     /// Pauses video playback when the app loses or gains focus

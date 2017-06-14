@@ -140,7 +140,7 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("L2-Android"))
         {
             //Check if raycast hits the media sphere
-            if (hlMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (dcMenu.enabled == false || hlMenu.enabled == false || stMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Starts creation of the new highlight
                 StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", hit.textureCoord, mp.GetMovieName())));
@@ -371,14 +371,14 @@ public class Control : MonoBehaviour
             ConfigureMenu(stMenu, !stMenu.enabled);
         }
 
-        while (Input.GetButton("L1-Windows"))
+        if (Input.GetButton("L1-Windows"))
         {
             //Reversing current video
             reversing = !reversing;
             mp.Reverse(reversing);
         }
 
-        while (Input.GetButton("R1-Windows"))
+        if (Input.GetButton("R1-Windows"))
         {
             //Forwarding current video
             forwarding = !forwarding;
@@ -388,7 +388,7 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("L2-Windows"))
         {
             //Check if raycast hits the media sphere
-            if (hlMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (dcMenu.enabled == false || hlMenu.enabled == false || stMenu.enabled == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Starts creation of the new highlight
                 StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", hit.textureCoord, mp.GetMovieName())));
