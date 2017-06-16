@@ -15,9 +15,7 @@ public class Control2 : MonoBehaviour
     private Dropdown list;                                      //Instance of the dropdown list object
 
     private Canvas vrMenu;                                      //Instance of the VRMenu object
-    private Canvas hlMenu;                                      //Instance of the HighlightMenu object
     private Canvas stMenu;                                      //Instance of the StartMenu object
-    private Canvas dcMenu;                                      //Instance of the DisconnectMenu object
 
     private RaycastHit hit;                                     //Point where the raycast hits
 
@@ -83,21 +81,9 @@ public class Control2 : MonoBehaviour
             {
                 vrMenu = c;
             }
-            if (c.name == "HighlightMenu")
-            {
-                hlMenu = c;
-
-                ConfigureMenu(hlMenu, false);
-            }
             if (c.name == "StartMenu")
             {
                 stMenu = c;
-            }
-            if (c.name == "DisconnectMenu")
-            {
-                dcMenu = c;
-
-                ConfigureMenu(dcMenu, false);
             }
         }
 
@@ -125,7 +111,11 @@ public class Control2 : MonoBehaviour
 
         if (Input.GetButton("X-Windows"))
         {
-
+            //Check if raycast hits the media sphere
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            {
+                mh.DeleteItem(hit.transform.gameObject);
+            }
         }
 
         if (Input.GetButton("Y-Windows"))
@@ -145,20 +135,147 @@ public class Control2 : MonoBehaviour
 
         if (Input.GetButton("R2-Windows"))
         {
+            //Check if raycast hits the media sphere
+            if (stMenu.enabled == false && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                //Get the correct texture coordinates on the video texture
+                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                Vector2 coords = hit.textureCoord;
+                coords.x *= tex.width;
+                coords.y *= tex.height;
 
+                Debug.Log(hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture);
+                //Starts creation of the new highlight
+                StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
+            }
+
+            //Check if the StartMenu is enabled and the dropdown list is closed
+            if (stMenu.enabled == true && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                switch (hit.transform.gameObject.name)
+                {
+                    case "VideoDropdown":
+                        //Open the dropdown list
+                        list.Show();
+
+                        //Give every Item own box collider
+                        for (int i = 1; i < list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.childCount; i++)
+                        {
+                            list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.AddComponent<BoxCollider>();
+                            list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.GetComponent<BoxCollider>().size = new Vector3(158, 28, 1);
+                        }
+
+                        opened = true;
+                        break;
+                    case "PlayVideo":
+                        ConfigureMenu(stMenu, false);
+
+                        //Load save file for currently selected video
+                        Load(list.options[list.value].text);
+
+                        //Set the chosen movie in the player and start the playback
+                        mp.SetMovieName(list.options[list.value].text);
+                        StartCoroutine(ShowText(mp.StartVideo()));
+                        break;
+                    case "Save":
+                        ConfigureMenu(stMenu, false);
+
+                        //Save file for currently selected video
+                        Save(list.options[list.value].text);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            //Check if the StartMenu is enabled and the dropdown list is opened
+            if (stMenu.enabled == true && opened == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                //Check for all videos if the shown item is part of possible videos
+                foreach (String video in videoList)
+                {
+                    if (hit.transform.gameObject.name.Contains(video))
+                    {
+                        //Get item index from hitted objects name
+                        selectedIndex = int.Parse(Regex.Replace(hit.transform.gameObject.name.Substring(0, hit.transform.gameObject.name.IndexOf(":")), "[^0-9]", ""));
+
+                        //Set selected item as new top item
+                        list.value = selectedIndex;
+
+                        //Hide the dropdown list
+                        list.Hide();
+
+                        opened = false;
+                        break;
+                    }
+                }
+
+                //Refresh the dropdown list with new parameters
+                list.RefreshShownValue();
+            }
         }
 
         if (Input.GetButton("L2-Windows"))
         {
 
         }
+        
+        if (Input.GetAxis("DPad-Horizontal-Windows") > 0)
+        {
+            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5) 
+            {
+                for (int i = 0; i < mp.GetMovieList().Count; i++)
+                {
+                    if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
+                    {
+                        int index = (i + 1) % mp.GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += mp.GetMovieList().Count;
+                        }
+                        mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                mp.StartVideo();
+            }
+            else
+            {
+                mp.JumpToPos((int) mp.GetMovieLength().TotalSeconds - 2);
+            }
+        }
 
-        if (Input.GetAxis("DPad-Horizontal-Windows") != 0)
+        if (Input.GetAxis("DPad-Horizontal-Windows") < 0)
+        {
+            if (mp.GetCurrentPos().TotalSeconds < 5)
+            {
+                for (int i = 0; i < mp.GetMovieList().Count; i++)
+                {
+                    if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
+                    {
+                        int index = (i - 1) % mp.GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += mp.GetMovieList().Count;
+                        }
+                        mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                mp.StartVideo();
+            }
+            else
+            {
+                mp.Rewind();
+            }
+        }
+
+        if (Input.GetAxis("DPad-Vertical-Windows") > 0)
         {
 
         }
 
-        if (Input.GetAxis("DPad-Vertical-Windows") != 0)
+        if (Input.GetAxis("DPad-Vertical-Windows") < 0)
         {
 
         }

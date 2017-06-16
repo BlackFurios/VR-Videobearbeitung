@@ -202,7 +202,6 @@ public class MediaPlayer : MonoBehaviour
     /// </summary>
     IEnumerator RetrieveStreamingAsset(string mediaFileName)
     {
-
 #if UNITY_ANDROID && !UNITY_EDITOR
 		string streamingMediaPath = "file://";
         string persistentPath = "";
@@ -296,6 +295,24 @@ public class MediaPlayer : MonoBehaviour
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         if (!videoPaused) 
         {
+            if (GetCurrentPos() == GetMovieLength())
+            {
+                for (int i = 0; i < GetMovieList().Count; i++)
+                {
+                    if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
+                    {
+                        int index = (i + 1) % GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += GetMovieList().Count;
+                        }
+                        SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                StartVideo();
+            }
+
             IntPtr currTexId = OVR_Media_Surface_GetNativeTexture();
             if (currTexId != nativeTexId)
             {
@@ -308,6 +325,24 @@ public class MediaPlayer : MonoBehaviour
 #else
         if (vp != null)
         {
+            if (vp.isPlaying && GetCurrentPos() == GetMovieLength())
+            {
+                for (int i = 0; i < GetMovieList().Count; i++)
+                {
+                    if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
+                    {
+                        int index = (i + 1) % GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += GetMovieList().Count;
+                        }
+                        SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                StartVideo();
+            }
+
             vp.Play();
             if (audioEmitter != null)
             {
@@ -325,6 +360,15 @@ public class MediaPlayer : MonoBehaviour
         //Starts the video
         StartCoroutine(RetrieveStreamingAsset(movieName));
         return movieName;
+    }
+
+    public TimeSpan GetMovieLength()
+    {
+#if (UNITY_ANDROID && !UNITY_EDITOR)
+        return TimeSpan.FromMilliseconds(mediaPlayer.Call("getDuration"));
+#else
+        return TimeSpan.FromSeconds(vp.frameCount / vp.frameRate);
+#endif
     }
 
     public TimeSpan GetCurrentPos()
