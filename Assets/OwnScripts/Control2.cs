@@ -23,9 +23,7 @@ public class Control2 : MonoBehaviour
     private int selectedIndex;                                  //Dropdown index which the user has selected
 
     private List<String> videoList = new List<string>();        //List of currently possible movies
-
-    private bool forwarding = false;                            //Is the video currently forwarding
-    private bool reversing = false;                             //Is the video currently reversing
+    
     private bool opened = false;                                //Is the drodown list opened
     private bool pausing = false;                               //Is the video currently paused
     private int showTime = 3;                                   //How long texts should be shown in seconds
@@ -104,11 +102,15 @@ public class Control2 : MonoBehaviour
 
         }
 
+        //Check if the B-Button is pressed
         if (Input.GetButton("B-Windows"))
         {
-
+            //Pauses current video
+            pausing = !pausing;
+            mp.SetPaused(pausing);
         }
 
+        //Check if the X-Button is pressed
         if (Input.GetButton("X-Windows"))
         {
             //Check if raycast hits the media sphere
@@ -133,23 +135,10 @@ public class Control2 : MonoBehaviour
 
         }
 
-        if (Input.GetButton("R2-Windows"))
+        //Check if the R2-Button is pressed
+        if (Input.GetButtonDown("R2-Windows"))
         {
-            //Check if raycast hits the media sphere
-            if (stMenu.enabled == false && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
-            {
-                //Get the correct texture coordinates on the video texture
-                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
-                Vector2 coords = hit.textureCoord;
-                coords.x *= tex.width;
-                coords.y *= tex.height;
-
-                Debug.Log(hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture);
-                //Starts creation of the new highlight
-                StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
-            }
-
-            //Check if the StartMenu is enabled and the dropdown list is closed
+            // Check if the StartMenu is enabled and the dropdown list is closed
             if (stMenu.enabled == true && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 switch (hit.transform.gameObject.name)
@@ -213,14 +202,74 @@ public class Control2 : MonoBehaviour
                 //Refresh the dropdown list with new parameters
                 list.RefreshShownValue();
             }
+
+            //Check if raycast hits the media sphere
+            if (stMenu.enabled == false && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                //Check if highlight was already spawned and needs to be manipulated
+                if (selectedObject == null && hit.transform.gameObject.name != "Highlight(Clone)")
+                {
+                    //Get the correct texture coordinates on the video texture
+                    Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                    Vector2 coords = hit.textureCoord;
+                    coords.x *= tex.width;
+                    coords.y *= tex.height;
+
+                    //Starts creation of the new highlight
+                    StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
+
+                    //Iterate through list of all highlights
+                    foreach (GameObject g in mh.GetList())
+                    {
+                        //Check for newly created highlight in list of all highlights
+                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
+                        {
+                            //Make the newly created highlight the selectedObject
+                            selectedObject = g;
+                            break;
+                        }
+                    }
+                }
+
+                //Check if user wants to manipulate an already existing highlight
+                if (selectedObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
+                {
+                    //Set hit highlight as selectedObject
+                    selectedObject = hit.transform.gameObject;
+                }
+            }
+        }
+
+        if (selectedObject != null)
+        {
+            //Check if new position is is nt on top of an existing highlight
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "360MediaSphere")
+            {
+                //Get the correct texture coordinates on the video texture
+                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                Vector2 coords = hit.textureCoord;
+                coords.x *= tex.width;
+                coords.y *= tex.height;
+
+                mh.ModifyItem(selectedObject, hit.point, mp.GetCurrentPos(), "Single", coords);
+                Debug.Log("Modifying");
+            }
+        }
+
+        //Check if the R2-Button is not pressed anymore
+        if (Input.GetButtonUp("R2-Windows"))
+        {
+            //Deselect highlight
+            selectedObject = null;
         }
 
         if (Input.GetButton("L2-Windows"))
         {
-
+            Save(mp.GetMovieName());
         }
-        
-        if (Input.GetAxis("DPad-Horizontal-Windows") > 0)
+
+        //Check if the up DPad-Button is pressed
+        if (Input.GetAxis("DPad-Vertical-Windows") > 0)
         {
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5) 
             {
@@ -245,7 +294,8 @@ public class Control2 : MonoBehaviour
             }
         }
 
-        if (Input.GetAxis("DPad-Horizontal-Windows") < 0)
+        //Check if the down DPad-Button is pressed
+        if (Input.GetAxis("DPad-Vertical-Windows") < 0)
         {
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
@@ -270,14 +320,22 @@ public class Control2 : MonoBehaviour
             }
         }
 
-        if (Input.GetAxis("DPad-Vertical-Windows") > 0)
+        //Check if the right DPad-Button is pressed
+        if (Input.GetAxis("DPad-Horizontal-Windows") > 0)
         {
-
+            mp.SetPlaybackSpeed(1);
         }
 
-        if (Input.GetAxis("DPad-Vertical-Windows") < 0)
+        //Check if the left DPad-Button is pressed
+        if (Input.GetAxis("DPad-Horizontal-Windows") < 0)
         {
+            mp.SetPlaybackSpeed(2);
+        }
 
+        //Check if the vertical DPad-Buttons are not pressed anymore
+        if (Input.GetAxis("DPad-Horizontal-Windows") == 0)
+        {
+            mp.SetPlaybackSpeed(0);
         }
 #endif
     }

@@ -365,7 +365,7 @@ public class MediaPlayer : MonoBehaviour
     public TimeSpan GetMovieLength()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        return TimeSpan.FromMilliseconds(mediaPlayer.Call("getDuration"));
+        return TimeSpan.FromMilliseconds(mediaPlayer.Call<int>("getDuration"));
 #else
         return TimeSpan.FromSeconds(vp.frameCount / vp.frameRate);
 #endif
@@ -422,68 +422,49 @@ public class MediaPlayer : MonoBehaviour
         return movieList[index].movie;
     }
 
-    public void Reverse(bool mode)
+    public void SetPlaybackSpeed(int mode)
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         if (mediaPlayer != null)
         {
-            try
-			{
-                if(mode)
-                {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") - 50);
-                }
-                else
-                {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") - 50);
-                }
-			}
-			catch (Exception e)
-			{
-				Debug.Log("Failed to stop mediaPlayer with message " + e.Message);
-			}
-        }
-#else
-        if (mode)
-        {
-            vp.playbackSpeed = 0.5f;
-        }
-        else
-        {
-            vp.playbackSpeed = 1;
-        }
-#endif
-    }
+            //Set video playback to normal (mode 0)
+            if (mode == 0)
+            {
+                
+            }
 
-    public void Forward(bool mode)
-    {
-#if (UNITY_ANDROID && !UNITY_EDITOR)
-        if (mediaPlayer != null)
-        {
-            try
-			{
-                if(mode)
-                {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") + 50);
-                }
-                else
-                {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") + 50);
-                }
-			}
-			catch (Exception e)
-			{
-                Debug.Log("Failed to stop mediaPlayer with message " + e.Message);
-			}
+            //Set video playback to fast (mode 1)
+            if (mode == 1)
+            {
+                
+            }
+
+            //Set video playback to slow (mode 2)
+            if (mode == 2)
+            {
+                
+            }
         }
 #else
-        if (mode)
+        if (vp != null)
         {
-            vp.playbackSpeed = 2;
-        }
-        else
-        {
-            vp.playbackSpeed = 1;
+            //Set video playback to normal (mode 0)
+            if (mode == 0)
+            {
+                vp.playbackSpeed = 1;
+            }
+
+            //Set video playback to fast (mode 1)
+            if (mode == 1)
+            {
+                vp.playbackSpeed = 2;
+            }
+
+            //Set video playback to slow (mode 2)
+            if (mode == 2)
+            {
+                vp.playbackSpeed = 0.5f;
+            }
         }
 #endif
     }

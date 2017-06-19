@@ -343,14 +343,14 @@ public class Control : MonoBehaviour
         {
             //Reversing current video
             reversing = !reversing;
-            mp.Reverse(reversing);
+            //mp.Reverse(reversing);
         }
         
         if (Input.GetButton("R1-Android"))
         {
             //Forwarding current video
             forwarding = !forwarding;
-            mp.Forward(forwarding);
+            //mp.Forward(forwarding);
         }
 #else
         //Joystick Controls for Windows
@@ -417,14 +417,14 @@ public class Control : MonoBehaviour
         {
             //Reversing current video
             reversing = !reversing;
-            mp.Reverse(reversing);
+            //mp.SetPlaybackSpeed(reversing);
         }
 
         if (Input.GetButton("R1-Windows"))
         {
             //Forwarding current video
             forwarding = !forwarding;
-            mp.Forward(forwarding);
+            //mp.SetPlaybackSpeed(reversing);
         }
 
         if (Input.GetButtonDown("L2-Windows"))

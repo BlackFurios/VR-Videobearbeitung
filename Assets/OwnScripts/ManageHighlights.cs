@@ -30,6 +30,7 @@ public class ManageHighlights : MonoBehaviour
             {
                 //Show this highlight
                 g.GetComponent<Renderer>().enabled = true;
+                g.GetComponent<MeshCollider>().enabled = true;
             }
             else
             {
@@ -40,17 +41,20 @@ public class ManageHighlights : MonoBehaviour
                     {
                         //Show this highlight
                         g.GetComponent<Renderer>().enabled = true;
+                        g.GetComponent<MeshCollider>().enabled = true;
                     }
                     else
                     {
                         //Do not show this highlight anymore
                         g.GetComponent<Renderer>().enabled = false;
+                        g.GetComponent<MeshCollider>().enabled = false;
                     }
                 }
                 else
                 {
                     //Do not show this highlight anymore
                     g.GetComponent<Renderer>().enabled = false;
+                    g.GetComponent<MeshCollider>().enabled = false;
                 }
             }
 
@@ -155,6 +159,33 @@ public class ManageHighlights : MonoBehaviour
         else
         {
             return "Highlight could not be created";
+        }
+    }
+
+    public void ModifyItem(GameObject current, Vector3 pos, TimeSpan ts, String type, Vector2 texPos)
+    {
+        if (current != null)
+        {
+            //Calculate the position of this highlight
+            Vector3 modPos = pos - Camera.main.transform.position;
+            modPos.x = modPos.x * 0.9f;
+            modPos.y = modPos.y * 0.9f;
+            modPos.z = modPos.z * 0.9f;
+
+            //Calculate the Rotation of this highlight
+            Quaternion modRot = Quaternion.Euler(Camera.main.transform.eulerAngles);
+            var eulRot = modRot.eulerAngles;
+            eulRot.x = eulRot.x + 90;
+            modRot.eulerAngles = eulRot;
+
+            //Add parameters of new highlight
+            current.GetComponent<HighlightMemory>().setTime(ts);
+            current.GetComponent<HighlightMemory>().setType(type);
+            current.GetComponent<HighlightMemory>().setTexPos(texPos);
+        }
+        else
+        {
+
         }
     }
 
