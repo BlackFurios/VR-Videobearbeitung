@@ -95,7 +95,226 @@ public class Control2 : MonoBehaviour
 	void Update ()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+        //Check if the B-Button is pressed
+        if (Input.GetButton("B-Android"))
+        {
+            //Pauses current video
+            pausing = !pausing;
+            mp.SetPaused(pausing);
+        }
 
+        //Check if the X-Button is pressed
+        if (Input.GetButton("X-Android"))
+        {
+            //Check if raycast hits the media sphere
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            {
+                mh.DeleteItem(hit.transform.gameObject);
+            }
+        }
+
+        //Check if the R2-Button is pressed
+        if (Input.GetButtonDown("R2-Android"))
+        {
+            // Check if the StartMenu is enabled and the dropdown list is closed
+            if (stMenu.enabled == true && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                switch (hit.transform.gameObject.name)
+                {
+                    case "VideoDropdown":
+                        //Open the dropdown list
+                        list.Show();
+
+                        //Give every Item own box collider
+                        for (int i = 1; i < list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.childCount; i++)
+                        {
+                            list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.AddComponent<BoxCollider>();
+                            list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.GetComponent<BoxCollider>().size = new Vector3(158, 28, 1);
+                        }
+
+                        opened = true;
+                        break;
+                    case "PlayVideo":
+                        ConfigureMenu(stMenu, false);
+
+                        //Load save file for currently selected video
+                        Load(list.options[list.value].text);
+
+                        //Set the chosen movie in the player and start the playback
+                        mp.SetMovieName(list.options[list.value].text);
+                        StartCoroutine(ShowText(mp.StartVideo()));
+                        break;
+                    case "Save":
+                        ConfigureMenu(stMenu, false);
+
+                        //Save file for currently selected video
+                        Save(list.options[list.value].text);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            //Check if the StartMenu is enabled and the dropdown list is opened
+            if (stMenu.enabled == true && opened == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                //Check for all videos if the shown item is part of possible videos
+                foreach (String video in videoList)
+                {
+                    if (hit.transform.gameObject.name.Contains(video))
+                    {
+                        //Get item index from hitted objects name
+                        selectedIndex = int.Parse(Regex.Replace(hit.transform.gameObject.name.Substring(0, hit.transform.gameObject.name.IndexOf(":")), "[^0-9]", ""));
+
+                        //Set selected item as new top item
+                        list.value = selectedIndex;
+
+                        //Hide the dropdown list
+                        list.Hide();
+
+                        opened = false;
+                        break;
+                    }
+                }
+
+                //Refresh the dropdown list with new parameters
+                list.RefreshShownValue();
+            }
+
+            //Check if raycast hits the media sphere
+            if (stMenu.enabled == false && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                //Check if highlight was already spawned and needs to be manipulated
+                if (selectedObject == null && hit.transform.gameObject.name != "Highlight(Clone)")
+                {
+                    //Get the correct texture coordinates on the video texture
+                    Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                    Vector2 coords = hit.textureCoord;
+                    coords.x *= tex.width;
+                    coords.y *= tex.height;
+
+                    //Starts creation of the new highlight
+                    StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
+
+                    //Iterate through list of all highlights
+                    foreach (GameObject g in mh.GetList())
+                    {
+                        //Check for newly created highlight in list of all highlights
+                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
+                        {
+                            //Make the newly created highlight the selectedObject
+                            selectedObject = g;
+                            break;
+                        }
+                    }
+                }
+
+                //Check if user wants to manipulate an already existing highlight
+                if (selectedObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
+                {
+                    //Set hit highlight as selectedObject
+                    selectedObject = hit.transform.gameObject;
+                }
+            }
+        }
+
+        if (selectedObject != null)
+        {
+            //Check if new position is is nt on top of an existing highlight
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "360MediaSphere")
+            {
+                //Get the correct texture coordinates on the video texture
+                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                Vector2 coords = hit.textureCoord;
+                coords.x *= tex.width;
+                coords.y *= tex.height;
+
+                mh.ModifyItem(selectedObject, hit.point, mp.GetCurrentPos(), "Single", coords);
+                Debug.Log("Modifying");
+            }
+        }
+
+        //Check if the R2-Button is not pressed anymore
+        if (Input.GetButtonUp("R2-Android"))
+        {
+            //Deselect highlight
+            selectedObject = null;
+        }
+
+        if (Input.GetButton("L2-Android"))
+        {
+            Save(mp.GetMovieName());
+        }
+
+        //Check if the up DPad-Button is pressed
+        if (Input.GetAxis("DPad-Vertical-Android") > 0)
+        {
+            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5) 
+            {
+                for (int i = 0; i < mp.GetMovieList().Count; i++)
+                {
+                    if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
+                    {
+                        int index = (i + 1) % mp.GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += mp.GetMovieList().Count;
+                        }
+                        mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                mp.StartVideo();
+            }
+            else
+            {
+                mp.JumpToPos((int) mp.GetMovieLength().TotalSeconds - 2);
+            }
+        }
+
+        //Check if the down DPad-Button is pressed
+        if (Input.GetAxis("DPad-Vertical-Android") < 0)
+        {
+            if (mp.GetCurrentPos().TotalSeconds < 5)
+            {
+                for (int i = 0; i < mp.GetMovieList().Count; i++)
+                {
+                    if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
+                    {
+                        int index = (i - 1) % mp.GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += mp.GetMovieList().Count;
+                        }
+                        mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                mp.StartVideo();
+            }
+            else
+            {
+                mp.Rewind();
+            }
+        }
+
+        //Check if the right DPad-Button is pressed
+        if (Input.GetAxis("DPad-Horizontal-Android") > 0)
+        {
+            mp.SetPlaybackSpeed(1);
+        }
+
+        //Check if the left DPad-Button is pressed
+        if (Input.GetAxis("DPad-Horizontal-Android") < 0)
+        {
+            mp.SetPlaybackSpeed(2);
+        }
+
+        //Check if the vertical DPad-Buttons are not pressed anymore
+        if (Input.GetAxis("DPad-Horizontal-Android") == 0)
+        {
+            mp.SetPlaybackSpeed(0);
+        }
 #else
         if (Input.GetButton("A-Windows"))
         {
