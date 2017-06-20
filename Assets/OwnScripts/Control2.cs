@@ -58,9 +58,9 @@ public class Control2 : MonoBehaviour
     void Start ()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        savePath = "/storage/emulated/0/Movies/VR-Videoschnitt/Saves/";
+        savePath = @"/storage/emulated/0/Movies/VR-Videoschnitt/Saves";
 #else
-        savePath = "C:/Users/" + Environment.UserName + "/Documents/VR-Videoschnitt/Saves/";
+        savePath = @"C:/Users/" + Environment.UserName + "/Documents/VR-Videoschnitt/Saves";
 #endif
 
         mh = GetComponent<ManageHighlights>();
@@ -110,6 +110,14 @@ public class Control2 : MonoBehaviour
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 mh.DeleteItem(hit.transform.gameObject);
+            }
+        }
+
+        if (Input.GetButton("R1-Android"))
+        {
+            if(selectedObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name != "Highlight(Clone)")
+            {
+                mh.ConnectItems(selectedObject);
             }
         }
 
@@ -346,7 +354,10 @@ public class Control2 : MonoBehaviour
 
         if (Input.GetButton("R1-Windows"))
         {
-
+            if(selectedObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name != "Highlight(Clone)")
+            {
+                mh.ConnectItems(selectedObject);
+            }
         }
 
         if (Input.GetButton("L1-Windows"))
@@ -464,6 +475,16 @@ public class Control2 : MonoBehaviour
             //Check if new position is is nt on top of an existing highlight
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "360MediaSphere")
             {
+                //Translate highlight while it is selected
+                mh.MoveItem(selectedObject, hit.point);
+            }
+        }
+
+        //Check if the R2-Button is not pressed anymore
+        if (Input.GetButtonUp("R2-Windows"))
+        {
+            if (selectedObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "360MediaSphere")
+            {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
                 Vector2 coords = hit.textureCoord;
@@ -471,15 +492,10 @@ public class Control2 : MonoBehaviour
                 coords.y *= tex.height;
 
                 mh.ModifyItem(selectedObject, hit.point, mp.GetCurrentPos(), "Single", coords);
-                Debug.Log("Modifying");
-            }
-        }
 
-        //Check if the R2-Button is not pressed anymore
-        if (Input.GetButtonUp("R2-Windows"))
-        {
-            //Deselect highlight
-            selectedObject = null;
+                //Deselect highlight
+                selectedObject = null;
+            }
         }
 
         if (Input.GetButton("L2-Windows"))
@@ -561,9 +577,16 @@ public class Control2 : MonoBehaviour
 
     void Save(String video)
     {
+        StartCoroutine(ShowText(video + " is saving..."));
+
         //Create Formatter and save file path + name
         BinaryFormatter bf = new BinaryFormatter();
-        String filePath = savePath + video + ".hl";
+        String filePath = savePath + "/" + video + ".hl";
+
+        if (!Directory.Exists(savePath))
+        {
+            Directory.CreateDirectory(savePath);
+        }
 
         FileStream fs = File.Create(filePath);
 
@@ -574,6 +597,8 @@ public class Control2 : MonoBehaviour
         //Serialize the file and close the filestream
         bf.Serialize(fs, data);
         fs.Close();
+
+        StartCoroutine(ShowText(video + " is saved"));
     }
 
     void Load(String video)

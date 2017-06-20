@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: 64808452900488552}
   - component: {fileID: 114371268345753560}
   - component: {fileID: 120362551831975720}
+  - component: {fileID: 135616373694472108}
   m_Layer: 0
   m_Name: Highlight
   m_TagString: Untagged
@@ -193,3 +194,15 @@ LineRenderer:
     textureMode: 0
   m_UseWorldSpace: 1
   m_Loop: 0
+--- !u!135 &135616373694472108
+SphereCollider:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1232875005913234}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 2
+  m_Center: {x: 0, y: 0, z: 0}

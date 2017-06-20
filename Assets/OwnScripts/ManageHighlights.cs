@@ -166,17 +166,8 @@ public class ManageHighlights : MonoBehaviour
     {
         if (current != null)
         {
-            //Calculate the position of this highlight
-            Vector3 modPos = pos - Camera.main.transform.position;
-            modPos.x = modPos.x * 0.9f;
-            modPos.y = modPos.y * 0.9f;
-            modPos.z = modPos.z * 0.9f;
-
-            //Calculate the Rotation of this highlight
-            Quaternion modRot = Quaternion.Euler(Camera.main.transform.eulerAngles);
-            var eulRot = modRot.eulerAngles;
-            eulRot.x = eulRot.x + 90;
-            modRot.eulerAngles = eulRot;
+            //Locate and rotate highlight according to current movement
+            MoveItem(current, pos);
 
             //Add parameters of new highlight
             current.GetComponent<HighlightMemory>().setTime(ts);
@@ -187,6 +178,20 @@ public class ManageHighlights : MonoBehaviour
         {
 
         }
+    }
+    public void MoveItem(GameObject current, Vector3 pos)
+    {
+        //Calculate the position of this highlight
+        Vector3 modPos = pos - Camera.main.transform.position;
+        modPos.x = modPos.x * 0.9f;
+        modPos.y = modPos.y * 0.9f;
+        modPos.z = modPos.z * 0.9f;
+
+        //Calculate the Rotation of this highlight
+        Quaternion modRot = Quaternion.Euler(Camera.main.transform.eulerAngles);
+        var eulRot = modRot.eulerAngles;
+        eulRot.x = eulRot.x + 90;
+        modRot.eulerAngles = eulRot;
     }
 
     public void ClearList()
@@ -259,7 +264,7 @@ public class ManageHighlights : MonoBehaviour
                     other.GetComponent<HighlightMemory>().setType("Chain");
 
                     //Draws a line to show the connection
-                    //Gizmos.DrawLine(selected.transform.position, other.transform.position);
+                    DrawLine(selected, other);
 
                     return "Highlights successfully connected";
                 }
@@ -283,7 +288,7 @@ public class ManageHighlights : MonoBehaviour
                     other.GetComponent<HighlightMemory>().setType("Chain");
 
                     //Draws a line to show the connection
-                    //Gizmos.DrawLine(selected.transform.position, other.transform.position);
+                    DrawLine(selected, other);
 
                     return "Highlights successfully connected";
                 }
@@ -381,5 +386,24 @@ public class ManageHighlights : MonoBehaviour
         {
             return "Slected highlight is not connected to anything";
         }
+    }
+
+    public void DrawLine(GameObject current, GameObject other)
+    {
+        //The line renderer component of the current highlight
+        LineRenderer lr = current.GetComponent<LineRenderer>();
+
+        //Check if line renderer is already enabled
+        if(lr.enabled == false)
+        {
+            //Activate line renderer
+            lr.enabled = true;
+        }
+
+        //Set start- and endpoint of line renderer
+        lr.SetPosition(0, current.transform.position);
+        lr.SetPosition(1, other.transform.position);
+
+
     }
 }
