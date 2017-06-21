@@ -26,7 +26,7 @@ public class Control2 : MonoBehaviour
     
     private bool opened = false;                                //Is the drodown list opened
     private bool pausing = false;                               //Is the video currently paused
-    private int showTime = 3;                                   //How long texts should be shown in seconds
+    private int showTime = 1;                                   //How long texts should be shown in seconds
 
     private String savePath;                                    //Absolute path of the save files
 
@@ -109,7 +109,7 @@ public class Control2 : MonoBehaviour
             //Check if raycast hits the media sphere
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
-                mh.DeleteItem(hit.transform.gameObject);
+                StartCoroutine(ShowText(mh.DeleteItem(hit.transform.gameObject)));
             }
         }
 
@@ -151,12 +151,6 @@ public class Control2 : MonoBehaviour
                         //Set the chosen movie in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
                         StartCoroutine(ShowText(mp.StartVideo()));
-                        break;
-                    case "Save":
-                        ConfigureMenu(stMenu, false);
-
-                        //Save file for currently selected video
-                        Save(list.options[list.value].text);
                         break;
                     default:
                         break;
@@ -255,10 +249,11 @@ public class Control2 : MonoBehaviour
         }
 
         //Check if the up DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Android") > 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Android") < 0)
         {
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5) 
             {
+                StartCoroutine(ShowText("5 Sekunden vor Ende"));
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
                 {
                     if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
@@ -269,19 +264,20 @@ public class Control2 : MonoBehaviour
                             index += mp.GetMovieList().Count;
                         }
                         mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
+                        StartCoroutine(ShowText("Video wurde geändert auf " + mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf("."))));
                         break;
                     }
                 }
-                mp.StartVideo();
+                StartCoroutine("Next: " + ShowText(mp.StartVideo()));
             }
             else
             {
-                mp.JumpToPos((int) mp.GetMovieLength().TotalSeconds - 2);
+                mp.JumpToPos((int) mp.GetMovieLength().TotalMilliseconds - 3000);
             }
         }
 
         //Check if the down DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Android") < 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Android") > 0)
         {
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
@@ -298,7 +294,7 @@ public class Control2 : MonoBehaviour
                         break;
                     }
                 }
-                mp.StartVideo();
+                StartCoroutine(ShowText("Previous: " + mp.StartVideo()));
             }
             else
             {
@@ -343,7 +339,7 @@ public class Control2 : MonoBehaviour
             //Check if raycast hits the media sphere
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
-                mh.DeleteItem(hit.transform.gameObject);
+                StartCoroutine(ShowText(mh.DeleteItem(hit.transform.gameObject)));
             }
         }
 
@@ -395,12 +391,6 @@ public class Control2 : MonoBehaviour
                         //Set the chosen movie in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
                         StartCoroutine(ShowText(mp.StartVideo()));
-                        break;
-                    case "Save":
-                        ConfigureMenu(stMenu, false);
-
-                        //Save file for currently selected video
-                        Save(list.options[list.value].text);
                         break;
                     default:
                         break;
@@ -504,7 +494,7 @@ public class Control2 : MonoBehaviour
         }
 
         //Check if the up DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Windows") > 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Windows") > 0)
         {
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5) 
             {
@@ -521,16 +511,16 @@ public class Control2 : MonoBehaviour
                         break;
                     }
                 }
-                mp.StartVideo();
+                StartCoroutine(ShowText(mp.StartVideo()));
             }
             else
             {
-                mp.JumpToPos((int) mp.GetMovieLength().TotalSeconds - 2);
+                mp.JumpToPos((int) mp.GetMovieLength().TotalSeconds - 3);
             }
         }
 
         //Check if the down DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Windows") < 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Windows") < 0)
         {
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
@@ -547,7 +537,7 @@ public class Control2 : MonoBehaviour
                         break;
                     }
                 }
-                mp.StartVideo();
+                StartCoroutine(ShowText(mp.StartVideo()));
             }
             else
             {
@@ -610,6 +600,8 @@ public class Control2 : MonoBehaviour
 
         if (File.Exists(filePath))
         {
+            StartCoroutine(ShowText(video + " is loading..."));
+
             BinaryFormatter bf = new BinaryFormatter();
             FileStream fs = File.Open(filePath, FileMode.Open);
 
@@ -617,6 +609,8 @@ public class Control2 : MonoBehaviour
             fs.Close();
 
             CreateHighlights(data, video);
+
+            StartCoroutine(ShowText(video + " is loaded"));
         }
     }
 

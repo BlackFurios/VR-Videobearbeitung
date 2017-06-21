@@ -208,7 +208,7 @@ public class ManageHighlights : MonoBehaviour
     }
 
     //Removes highlight from the list of managed highlights and then destroys it
-    public void DeleteItem(GameObject current)
+    public String DeleteItem(GameObject current)
     {
         //Check if highlight is in between two other connected highlights
         if (current.GetComponent<HighlightMemory>().getNext() != null && current.GetComponent<HighlightMemory>().getPrev() != null)
@@ -234,6 +234,9 @@ public class ManageHighlights : MonoBehaviour
         //Delete highlight from list and destroy the highlight
         hList.RemoveAt(hList.IndexOf(current));
         Destroy(current);
+
+        //
+        return "Highlight successfully removed";
     }
 
     public String ConnectItems(GameObject selected)
