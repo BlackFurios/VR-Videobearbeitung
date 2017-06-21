@@ -76,6 +76,8 @@ public class MediaPlayer : MonoBehaviour
     private string              mediaFullPath = string.Empty;           //Path of video which is currently played
     private bool                startedVideo = false;                   //Is the video started
 
+    private String              updStr;                                 //Is a valid video returned at VideStart()
+
 #if (UNITY_ANDROID && !UNITY_EDITOR)
 	private Texture2D           nativeTexture = null;                   //Instance of texture
 	private IntPtr	            nativeTexId = IntPtr.Zero;              //Pointer for TextureID
@@ -299,30 +301,35 @@ public class MediaPlayer : MonoBehaviour
         //Check if video player is there
         if (mediaPlayer != null) 
         {
-            //Check if the video player is playing and is at the end of the video
-            if (!videoPaused && GetCurrentPos() == GetMovieLength())
-            {
-                //Iterate through all videos
-                for (int i = 0; i < GetMovieList().Count; i++)
-                {
-                    //Check for the current video
-                    if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
-                    {
-                        //Make the array a cycle (0 -> 1 -> 2 -> 0)
-                        int index = (i + 1) % GetMovieList().Count;
-                        if (index < 0)
-                        {
-                            index += GetMovieList().Count;
-                        }
+            ////Check if the video player is playing and is at the end of the video
+            //if (!videoPaused && GetCurrentPos() == GetMovieLength())
+            //{
+            //    //Iterate through all videos
+            //    for (int i = 0; i < GetMovieList().Count; i++)
+            //    {
+            //        //Check for the current video
+            //        if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
+            //        {
+            //            //Make the array a cycle (0 -> 1 -> 2 -> 0)
+            //            int index = (i + 1) % GetMovieList().Count;
+            //            if (index < 0)
+            //            {
+            //                index += GetMovieList().Count;
+            //            }
 
-                        //Set the next videoas current video
-                        SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
-                        break;
-                    }
-                }
-                //Start the video player with the new video
-                StartVideo();
-            }
+            //            //Set the next videoas current video
+            //            SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+            //            break;
+            //        }
+            //    }
+            //    //Start the video player with the new video
+            //    updStr = StartVideo();
+
+            //    if(updStr != null)
+            //    {
+            //        Debug.LogError("No valid video found");
+            //    }
+            //}
 
             IntPtr currTexId = OVR_Media_Surface_GetNativeTexture();
             if (currTexId != nativeTexId)
@@ -359,7 +366,12 @@ public class MediaPlayer : MonoBehaviour
                     }
                 }
                 //Start the video player with the new video
-                StartVideo();
+                updStr = StartVideo();
+
+                if(updStr != null)
+                {
+                    Debug.LogError("No valid video found");
+                }
             }
 
             vp.Play();
@@ -642,6 +654,22 @@ public class MediaPlayer : MonoBehaviour
         }
 
         return playerParams;
+    }
+
+    class MediaPlayerEndListener : AndroidJavaProxy
+    {
+        public MediaPlayerEndListener() : base("android.media.MediaPlayer$OnCompletionListener") {}
+
+        void onCompletion(AndroidJavaObject mediaPlayer)
+        {
+            //Start the video player with the new video
+            updStr = StartVideo();
+
+            if(updStr != null)
+            {
+                Debug.LogError("No valid video found");
+            }
+        }
     }
 #endif
 

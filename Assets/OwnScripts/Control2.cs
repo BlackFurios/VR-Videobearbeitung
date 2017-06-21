@@ -573,22 +573,34 @@ public class Control2 : MonoBehaviour
         BinaryFormatter bf = new BinaryFormatter();
         String filePath = savePath + "/" + video + ".hl";
 
+        //Check if directory is not created
         if (!Directory.Exists(savePath))
         {
+            //Create the directory
             Directory.CreateDirectory(savePath);
         }
+        
+        //Check if file is already created
+        if (File.Exists(filePath))
+        {
+            //Clear the file
+            File.WriteAllText(filePath, String.Empty);
+        }
 
-        FileStream fs = File.Create(filePath);
+        //Create/Open the save file
+        FileStream fs = File.Open(filePath, FileMode.OpenOrCreate);
 
         //Write data in savaData
         SaveData data = new SaveData();
         CreateIDList(data);
 
+        StartCoroutine(ShowText(data.idList.Count.ToString()));
+
         //Serialize the file and close the filestream
         bf.Serialize(fs, data);
         fs.Close();
 
-        StartCoroutine(ShowText(video + " is saved"));
+        //StartCoroutine(ShowText(video + " is saved"));
     }
 
     void Load(String video)
@@ -649,10 +661,9 @@ public class Control2 : MonoBehaviour
                         break;
                     }
                 }
-
-                //Create global ID from localID and nextLocalID
-                data.idList[i] = localIdList[i].localID + "|" + nextLocalId;
             }
+            //Create global ID from localID and nextLocalID
+            data.idList.Add(localIdList[i].localID + "|" + nextLocalId);
         }
     }
 
