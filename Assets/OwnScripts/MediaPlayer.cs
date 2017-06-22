@@ -76,12 +76,15 @@ public class MediaPlayer : MonoBehaviour
     private string              mediaFullPath = string.Empty;           //Path of video which is currently played
     private bool                startedVideo = false;                   //Is the video started
 
+    private String              updStr;                                 //Is a valid video returned at VideStart()
+
 #if (UNITY_ANDROID && !UNITY_EDITOR)
 	private Texture2D           nativeTexture = null;                   //Instance of texture
 	private IntPtr	            nativeTexId = IntPtr.Zero;              //Pointer for TextureID
 	private int		            textureWidth = 2880;                    //Hardcoded width of video player
 	private int 	            textureHeight = 1440;                   //Hardcoded height of video player
 	private AndroidJavaObject   mediaPlayer = null;                     //Instance of AndroidMediaPlayer
+    private AndroidJavaObject   playerParams = null;                    //Instance of AndroidPlaybackParams
 #else
     private VideoPlayer         vp;                                     //Instance of the video player script
     private AudioSource         audioEmitter = null;                    //AudioEmitter which plays the video sound
@@ -202,7 +205,6 @@ public class MediaPlayer : MonoBehaviour
     /// </summary>
     IEnumerator RetrieveStreamingAsset(string mediaFileName)
     {
-
 #if UNITY_ANDROID && !UNITY_EDITOR
 		string streamingMediaPath = "file://";
         string persistentPath = "";
@@ -267,6 +269,8 @@ public class MediaPlayer : MonoBehaviour
 #if (UNITY_ANDROID && !UNITY_EDITOR)
 			mediaPlayer = StartVideoPlayerOnTextureId(textureWidth, textureHeight, mediaFullPath);
 			mediaRenderer.material.mainTexture = nativeTexture;
+
+            playerParams = CreateMediaPlayerParams();
 #else
             vp.Prepare();
 
@@ -294,8 +298,39 @@ public class MediaPlayer : MonoBehaviour
     void Update()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        if (!videoPaused) 
+        //Check if video player is there
+        if (mediaPlayer != null) 
         {
+            ////Check if the video player is playing and is at the end of the video
+            //if (!videoPaused && GetCurrentPos() == GetMovieLength())
+            //{
+            //    //Iterate through all videos
+            //    for (int i = 0; i < GetMovieList().Count; i++)
+            //    {
+            //        //Check for the current video
+            //        if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
+            //        {
+            //            //Make the array a cycle (0 -> 1 -> 2 -> 0)
+            //            int index = (i + 1) % GetMovieList().Count;
+            //            if (index < 0)
+            //            {
+            //                index += GetMovieList().Count;
+            //            }
+
+            //            //Set the next videoas current video
+            //            SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+            //            break;
+            //        }
+            //    }
+            //    //Start the video player with the new video
+            //    updStr = StartVideo();
+
+            //    if(updStr != null)
+            //    {
+            //        Debug.LogError("No valid video found");
+            //    }
+            //}
+
             IntPtr currTexId = OVR_Media_Surface_GetNativeTexture();
             if (currTexId != nativeTexId)
             {
@@ -306,8 +341,39 @@ public class MediaPlayer : MonoBehaviour
             IssuePluginEvent(MediaSurfaceEventType.Update);
         }
 #else
+        //Check if video player is there
         if (vp != null)
         {
+            //Check if the video player is playing and is at the end of the video
+            if (vp.isPlaying && GetCurrentPos() == GetMovieLength())
+            {
+                //Iterate through all videos
+                for (int i = 0; i < GetMovieList().Count; i++)
+                {
+                    //Check for the current video
+                    if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
+                    {
+                        //Make the array a cycle (0 -> 1 -> 2 -> 0)
+                        int index = (i + 1) % GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += GetMovieList().Count;
+                        }
+
+                        //Set the next videoas current video
+                        SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                //Start the video player with the new video
+                updStr = StartVideo();
+
+                if(updStr != null)
+                {
+                    Debug.LogError("No valid video found");
+                }
+            }
+
             vp.Play();
             if (audioEmitter != null)
             {
@@ -325,6 +391,15 @@ public class MediaPlayer : MonoBehaviour
         //Starts the video
         StartCoroutine(RetrieveStreamingAsset(movieName));
         return movieName;
+    }
+
+    public TimeSpan GetMovieLength()
+    {
+#if (UNITY_ANDROID && !UNITY_EDITOR)
+        return TimeSpan.FromMilliseconds(mediaPlayer.Call<int>("getDuration"));
+#else
+        return TimeSpan.FromSeconds(vp.frameCount / vp.frameRate);
+#endif
     }
 
     public TimeSpan GetCurrentPos()
@@ -378,68 +453,52 @@ public class MediaPlayer : MonoBehaviour
         return movieList[index].movie;
     }
 
-    public void Reverse(bool mode)
+    public void SetPlaybackSpeed(int mode)
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        if (mediaPlayer != null)
+        if (mediaPlayer != null && playerParams != null)
         {
-            try
-			{
-                if(mode)
-                {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") - 50);
-                }
-                else
-                {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") - 50);
-                }
-			}
-			catch (Exception e)
-			{
-				Debug.Log("Failed to stop mediaPlayer with message " + e.Message);
-			}
-        }
-#else
-        if (mode)
-        {
-            vp.playbackSpeed = 0.5f;
-        }
-        else
-        {
-            vp.playbackSpeed = 1;
-        }
-#endif
-    }
+            //Set video playback to normal (mode 0)
+            if (mode == 0)
+            {
+                playerParams.Call("setSpeed", 1);
+                mediaPlayer.Call("setPlaybackParams", playerParams);
+            }
 
-    public void Forward(bool mode)
-    {
-#if (UNITY_ANDROID && !UNITY_EDITOR)
-        if (mediaPlayer != null)
-        {
-            try
-			{
-                if(mode)
-                {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") + 50);
-                }
-                else
-                {
-                    mediaPlayer.Call("seekTo", mediaPlayer.Call<int>("getCurrentPosition") + 50);
-                }
-			}
-			catch (Exception e)
-			{
-                Debug.Log("Failed to stop mediaPlayer with message " + e.Message);
-			}
+            //Set video playback to fast (mode 1)
+            if (mode == 1)
+            {
+                playerParams.Call("setSpeed", 2);
+                mediaPlayer.Call("setPlaybackParams", playerParams);
+            }
+
+            //Set video playback to slow (mode 2)
+            if (mode == 2)
+            {
+                playerParams.Call("setSpeed", 0.5f);
+                mediaPlayer.Call("setPlaybackParams", playerParams);
+            }
         }
 #else
-        if (mode)
+        if (vp != null)
         {
-            vp.playbackSpeed = 2;
-        }
-        else
-        {
-            vp.playbackSpeed = 1;
+            //Set video playback to normal (mode 0)
+            if (mode == 0)
+            {
+                vp.playbackSpeed = 1;
+            }
+
+            //Set video playback to fast (mode 1)
+            if (mode == 1)
+            {
+                vp.playbackSpeed = 2;
+            }
+
+            //Set video playback to slow (mode 2)
+            if (mode == 2)
+            {
+                vp.playbackSpeed = 0.5f;
+            }
         }
 #endif
     }
@@ -566,7 +625,7 @@ public class MediaPlayer : MonoBehaviour
 		{
 			mediaPlayer.Call("setDataSource", mediaPath);
 			mediaPlayer.Call("prepare");
-			mediaPlayer.Call("setLooping", true);
+			mediaPlayer.Call("setLooping", false);
 			mediaPlayer.Call("start");
 		}
 		catch (Exception e)
@@ -576,6 +635,42 @@ public class MediaPlayer : MonoBehaviour
 
 		return mediaPlayer;
 	}
+
+    AndroidJavaObject CreateMediaPlayerParams()
+    {
+        Debug.Log("PlayerParams: CreateMediaPlayerParams");
+        
+        if (mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams") != null)
+        {
+            AndroidJavaObject playerParams = mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams");
+        }
+        else
+        {
+            AndroidJavaObject playerParams = new AndroidJavaObject("android/media/PlaybackParams");
+
+            playerParams.Call("setAudioFallbackMode", 0);
+            playerParams.Call("setPitch", 1);
+            playerParams.Call("setSpeed", 1);
+        }
+
+        return playerParams;
+    }
+
+    class MediaPlayerEndListener : AndroidJavaProxy
+    {
+        public MediaPlayerEndListener() : base("android.media.MediaPlayer$OnCompletionListener") {}
+
+        void onCompletion(AndroidJavaObject mediaPlayer)
+        {
+            //Start the video player with the new video
+            updStr = StartVideo();
+
+            if(updStr != null)
+            {
+                Debug.LogError("No valid video found");
+            }
+        }
+    }
 #endif
 
 #if (UNITY_ANDROID && !UNITY_EDITOR)

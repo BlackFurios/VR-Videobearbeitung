@@ -12,7 +12,7 @@ public class ManageHighlights : MonoBehaviour
     public GameObject           highLight;                          //Highlight prefab to be managed
 
     private float               range = 3;                          //Range in which no other highlight should be spawned
-    private float               timeRange = 5;                      //The time range in which this highlight should be shown in the UI
+    private float               timeRange = 3;                      //The time range in which this highlight should be shown in the UI (x2 in video)
 
     //Use this for initialization
     void Start ()
@@ -30,6 +30,7 @@ public class ManageHighlights : MonoBehaviour
             {
                 //Show this highlight
                 g.GetComponent<Renderer>().enabled = true;
+                g.GetComponent<MeshCollider>().enabled = true;
             }
             else
             {
@@ -40,17 +41,20 @@ public class ManageHighlights : MonoBehaviour
                     {
                         //Show this highlight
                         g.GetComponent<Renderer>().enabled = true;
+                        g.GetComponent<MeshCollider>().enabled = true;
                     }
                     else
                     {
                         //Do not show this highlight anymore
                         g.GetComponent<Renderer>().enabled = false;
+                        g.GetComponent<MeshCollider>().enabled = false;
                     }
                 }
                 else
                 {
                     //Do not show this highlight anymore
                     g.GetComponent<Renderer>().enabled = false;
+                    g.GetComponent<MeshCollider>().enabled = false;
                 }
             }
 
@@ -122,6 +126,7 @@ public class ManageHighlights : MonoBehaviour
         {
             foreach (GameObject g in hList)
             {
+                //Check if spawning this highlight is possible
                 current = SpawnHighlight(pos, g);
                 if (current == null)
                 {
@@ -157,11 +162,44 @@ public class ManageHighlights : MonoBehaviour
         }
     }
 
+    public void ModifyItem(GameObject current, Vector3 pos, TimeSpan ts, String type, Vector2 texPos)
+    {
+        if (current != null)
+        {
+            //Locate and rotate highlight according to current movement
+            MoveItem(current, pos);
+
+            //Add parameters of new highlight
+            current.GetComponent<HighlightMemory>().setTime(ts);
+            current.GetComponent<HighlightMemory>().setType(type);
+            current.GetComponent<HighlightMemory>().setTexPos(texPos);
+        }
+        else
+        {
+
+        }
+    }
+    public void MoveItem(GameObject current, Vector3 pos)
+    {
+        //Calculate the position of this highlight
+        Vector3 modPos = pos - Camera.main.transform.position;
+        modPos.x = modPos.x * 0.9f;
+        modPos.y = modPos.y * 0.9f;
+        modPos.z = modPos.z * 0.9f;
+
+        //Calculate the Rotation of this highlight
+        Quaternion modRot = Quaternion.Euler(Camera.main.transform.eulerAngles);
+        var eulRot = modRot.eulerAngles;
+        eulRot.x = eulRot.x + 90;
+        modRot.eulerAngles = eulRot;
+    }
+
     public void ClearList()
     {
         //Destroy all highlights from list
         foreach (GameObject g in hList)
         {
+            //Delete the gameObject of the currently active highlight
             DeleteItem(g);
         }
 
@@ -170,11 +208,12 @@ public class ManageHighlights : MonoBehaviour
     }
 
     //Removes highlight from the list of managed highlights and then destroys it
-    public void DeleteItem(GameObject current)
+    public String DeleteItem(GameObject current)
     {
+        //Check if highlight is in between two other connected highlights
         if (current.GetComponent<HighlightMemory>().getNext() != null && current.GetComponent<HighlightMemory>().getPrev() != null)
         {
-            //
+            //Connect the next and the previous highlight to each other to safely remove the selected highlight
             current.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(current.GetComponent<HighlightMemory>().getPrev());
             current.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(current.GetComponent<HighlightMemory>().getNext());
         }
@@ -195,6 +234,9 @@ public class ManageHighlights : MonoBehaviour
         //Delete highlight from list and destroy the highlight
         hList.RemoveAt(hList.IndexOf(current));
         Destroy(current);
+
+        //
+        return "Highlight successfully removed";
     }
 
     public String ConnectItems(GameObject selected)
@@ -225,7 +267,7 @@ public class ManageHighlights : MonoBehaviour
                     other.GetComponent<HighlightMemory>().setType("Chain");
 
                     //Draws a line to show the connection
-                    //Gizmos.DrawLine(selected.transform.position, other.transform.position);
+                    DrawLine(selected, other);
 
                     return "Highlights successfully connected";
                 }
@@ -249,7 +291,7 @@ public class ManageHighlights : MonoBehaviour
                     other.GetComponent<HighlightMemory>().setType("Chain");
 
                     //Draws a line to show the connection
-                    //Gizmos.DrawLine(selected.transform.position, other.transform.position);
+                    DrawLine(selected, other);
 
                     return "Highlights successfully connected";
                 }
@@ -267,6 +309,7 @@ public class ManageHighlights : MonoBehaviour
 
     public String DisconnectItems(GameObject selected, String mode)
     {
+        //Check if this highlight has a previous or a next highlight
         if (selected.GetComponent<HighlightMemory>().getPrev() != null || selected.GetComponent<HighlightMemory>().getNext() != null)
         {
             RaycastHit hit;
@@ -276,34 +319,36 @@ public class ManageHighlights : MonoBehaviour
             {
                 var other = hit.transform.gameObject;
 
+                //Check which connections will be deleted
                 switch (mode)
                 {
                     case "Prev":
-                        //
+                        //Check if this highlight has a previous highlight
                         if (selected.GetComponent<HighlightMemory>().getPrev() != null)
                         {
-                            //
+                            //Set the next parameter on the previous highlight to null then destroy the selected highlight
                             selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
                             selected.GetComponent<HighlightMemory>().setPrev(null);
                         }
                         break;
                     case "Next":
-                        //
+                        //Check if this highlight has a next highlight
                         if (selected.GetComponent<HighlightMemory>().getNext() != null)
                         {
-                            //
+                            //Set the previous parameter on the next highlight to null then destroy the selected highlight
                             selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
                             selected.GetComponent<HighlightMemory>().setNext(null);
                         }
                         break;
                     case "Both":
-                        //
+                        //Check if this highlight has a next and a previous highlight
                         if (selected.GetComponent<HighlightMemory>().getPrev() != null && selected.GetComponent<HighlightMemory>().getNext() != null)
                         {
+                            //Set the next parameter on the previous highlight to null then destroy the selected highlight
                             selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
                             selected.GetComponent<HighlightMemory>().setPrev(null);
 
-                            //
+                            //Set the previous parameter on the next highlight to null then destroy the selected highlight
                             selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
                             selected.GetComponent<HighlightMemory>().setNext(null);
                         }
@@ -344,5 +389,24 @@ public class ManageHighlights : MonoBehaviour
         {
             return "Slected highlight is not connected to anything";
         }
+    }
+
+    public void DrawLine(GameObject current, GameObject other)
+    {
+        //The line renderer component of the current highlight
+        LineRenderer lr = current.GetComponent<LineRenderer>();
+
+        //Check if line renderer is already enabled
+        if(lr.enabled == false)
+        {
+            //Activate line renderer
+            lr.enabled = true;
+        }
+
+        //Set start- and endpoint of line renderer
+        lr.SetPosition(0, current.transform.position);
+        lr.SetPosition(1, other.transform.position);
+
+
     }
 }

@@ -9,28 +9,30 @@ using UnityEngine.UI;
 
 public class Control : MonoBehaviour
 {
-    private ManageHighlights    mh;                                 //Instance of the ManageHighlights script
-    private MediaPlayer         mp;                                 //Instance of the MediaPlayer script
+    private ManageHighlights    mh;                                         //Instance of the ManageHighlights script
+    private MediaPlayer         mp;                                         //Instance of the MediaPlayer script
 
-    private Dropdown            list;                               //Instance of the dropdown list object
+    private Dropdown            list;                                       //Instance of the dropdown list object
 
-    private Canvas              vrMenu;                             //Instance of the VRMenu object
-    private Canvas              hlMenu;                             //Instance of the HighlightMenu object
-    private Canvas              stMenu;                             //Instance of the StartMenu object
-    private Canvas              dcMenu;                             //Instance of the DisconnectMenu object
+    private Canvas              vrMenu;                                     //Instance of the VRMenu object
+    private Canvas              hlMenu;                                     //Instance of the HighlightMenu object
+    private Canvas              stMenu;                                     //Instance of the StartMenu object
+    private Canvas              dcMenu;                                     //Instance of the DisconnectMenu object
     
-    private RaycastHit          hit;                                //Point where the raycast hits
+    private RaycastHit          hit;                                        //Point where the raycast hits
 
-    private GameObject          selectedObject;                     //Highlight which the user has selected
-    private int                 selectedIndex;                      //Dropdown index which the user has selected
+    private GameObject          selectedObject;                             //Highlight which the user has selected
+    private int                 selectedIndex;                              //Dropdown index which the user has selected
 
-    private List<String>        videoList = new List<string>();     //List of currently possible movies
+    private List<String>        videoList = new List<string>();             //List of currently possible movies
 
-    private bool                forwarding = false;                 //Is the video currently forwarding
-    private bool                reversing = false;                  //Is the video currently reversing
-    private bool                opened = false;                     //Is the drodown list opened
-    private bool                pausing = false;                    //Is the video currently paused
-    private int                 showTime = 3;                       //How long texts should be shown in seconds
+    private bool                forwarding = false;                         //Is the video currently forwarding
+    private bool                reversing = false;                          //Is the video currently reversing
+    private bool                opened = false;                             //Is the drodown list opened
+    private bool                pausing = false;                            //Is the video currently paused
+    private int                 showTime = 3;                               //How long texts should be shown in seconds
+
+    private String              savePath;                                   //Absolute path of the save files
 
     public class localId
     {
@@ -59,6 +61,12 @@ public class Control : MonoBehaviour
     // Use this for initialization
     void Start ()
     {
+#if (UNITY_ANDROID && !UNITY_EDITOR)
+        savePath = "/storage/emulated/0/Movies/VR-Videoschnitt/Saves/";
+#else
+        savePath = "C:/Users/" + Environment.UserName + "/Documents/VR-Videoschnitt/Saves/";
+#endif
+
         mh = GetComponent<ManageHighlights>();
         mp = GetComponent<MediaPlayer>();
 
@@ -335,17 +343,43 @@ public class Control : MonoBehaviour
         {
             //Reversing current video
             reversing = !reversing;
-            mp.Reverse(reversing);
+            //mp.Reverse(reversing);
         }
         
         if (Input.GetButton("R1-Android"))
         {
             //Forwarding current video
             forwarding = !forwarding;
-            mp.Forward(forwarding);
+            //mp.Forward(forwarding);
         }
 #else
         //Joystick Controls for Windows
+
+
+        Debug.Log(Input.GetAxis("LeftThump-Horizontal") + " : " + Input.GetAxisRaw("LeftThump-Horizontal"));
+        //if (Input.GetAxis("LeftThump-Horizontal") != 0)
+        //{
+        //    Debug.Log("LeftThump-Horizontal: " + Input.GetAxis("LeftThump-Horizontal"));
+        //}
+
+        //if (Input.GetAxis("LeftThump-Vertical") != 0)
+        //{
+        //    Debug.Log("LeftThump-Vertical: " + Input.GetAxis("LeftThump-Vertical"));
+        //}
+
+
+
+
+        if (Input.GetButton("LeftThumpstick-Windows"))
+        {
+            Debug.Log("Left Thumpstick");
+        }
+
+        if (Input.GetButton("RightThumpstick-Windows"))
+        {
+            Debug.Log("Right Thumpstick");
+        }
+
         if (Input.GetButton("A-Windows"))
         {
             //Pauses current video
@@ -383,14 +417,14 @@ public class Control : MonoBehaviour
         {
             //Reversing current video
             reversing = !reversing;
-            mp.Reverse(reversing);
+            //mp.SetPlaybackSpeed(reversing);
         }
 
         if (Input.GetButton("R1-Windows"))
         {
             //Forwarding current video
             forwarding = !forwarding;
-            mp.Forward(forwarding);
+            //mp.SetPlaybackSpeed(reversing);
         }
 
         if (Input.GetButtonDown("L2-Windows"))
@@ -600,7 +634,7 @@ public class Control : MonoBehaviour
     {
         //Create Formatter and save file path + name
         BinaryFormatter bf = new BinaryFormatter();
-        String filePath = Application.persistentDataPath + "/" + video + ".hl";
+        String filePath = savePath + video + ".hl";
 
         FileStream fs = File.Create(filePath);
 
@@ -615,7 +649,7 @@ public class Control : MonoBehaviour
 
     void Load(String video)
     {
-        String filePath = Application.persistentDataPath + "/" + video + ".hl";
+        String filePath = savePath + video + ".hl";
 
         //Clear old list from highlights
         mh.ClearList();
