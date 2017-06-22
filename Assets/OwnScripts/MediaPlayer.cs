@@ -656,21 +656,21 @@ public class MediaPlayer : MonoBehaviour
         return playerParams;
     }
 
-    class MediaPlayerEndListener : AndroidJavaProxy
-    {
-        public MediaPlayerEndListener() : base("android.media.MediaPlayer$OnCompletionListener") {}
+    //class MediaPlayerEndListener : AndroidJavaProxy
+    //{
+    //    public MediaPlayerEndListener() : base("android.media.MediaPlayer$OnCompletionListener") {}
 
-        void onCompletion(AndroidJavaObject mediaPlayer)
-        {
-            //Start the video player with the new video
-            updStr = StartVideo();
+    //    void onCompletion(AndroidJavaObject mediaPlayer)
+    //    {
+    //        //Start the video player with the new video
+    //        updStr = StartVideo();
 
-            if(updStr != null)
-            {
-                Debug.LogError("No valid video found");
-            }
-        }
-    }
+    //        if(updStr != null)
+    //        {
+    //            Debug.LogError("No valid video found");
+    //        }
+    //    }
+    //}
 #endif
 
 #if (UNITY_ANDROID && !UNITY_EDITOR)

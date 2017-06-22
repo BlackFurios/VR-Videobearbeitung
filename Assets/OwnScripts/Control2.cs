@@ -18,8 +18,10 @@ public class Control2 : MonoBehaviour
     private Canvas stMenu;                                      //Instance of the StartMenu object
 
     private RaycastHit hit;                                     //Point where the raycast hits
+    private int layerMask = 1 << 8;                             //LayerMask with layer of the highlights
 
-    private GameObject selectedObject;                          //Highlight which the user has selected
+    private GameObject conObject;                               //Highlight which the user is connecting
+    private GameObject modObject;                               //Highlight which the user is modifying
     private int selectedIndex;                                  //Dropdown index which the user has selected
 
     private List<String> videoList = new List<string>();        //List of currently possible movies
@@ -66,6 +68,9 @@ public class Control2 : MonoBehaviour
         mh = GetComponent<ManageHighlights>();
         mp = GetComponent<MediaPlayer>();
 
+        //Invert the layerMask to only ignore the the highlight layer
+        layerMask = ~layerMask;
+
         for (int i = 0; i < mp.GetMovieList().Count; i++)
         {
             //Fill movieList with detected videos
@@ -95,6 +100,11 @@ public class Control2 : MonoBehaviour
 	void Update ()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+        if (Input.GetButton("A-Android"))
+        {
+
+        }
+
         //Check if the B-Button is pressed
         if (Input.GetButton("B-Android"))
         {
@@ -113,11 +123,40 @@ public class Control2 : MonoBehaviour
             }
         }
 
-        if (Input.GetButton("R1-Android"))
+        if (Input.GetButton("Y-Android"))
         {
-            if(selectedObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name != "Highlight(Clone)")
+
+        }
+
+        if (Input.GetButtonDown("R1-Android"))
+        {
+            if(Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
-                mh.ConnectItems(selectedObject);
+                if (conObject != null)
+                {
+                    mh.ConnectItems(conObject, hit.transform.gameObject);
+                    conObject = null;
+                }
+                else if (conObject == null)
+                {
+                    conObject = hit.transform.gameObject;
+                }
+            }
+        }
+
+        if (Input.GetButton("L1-Android"))
+        {
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            {
+                if (conObject != null)
+                {
+                    mh.DisconnectItems(conObject);
+                    conObject = null;
+                }
+                else if (conObject == null)
+                {
+                    conObject = hit.transform.gameObject;
+                }
             }
         }
 
@@ -187,7 +226,7 @@ public class Control2 : MonoBehaviour
             if (stMenu.enabled == false && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check if highlight was already spawned and needs to be manipulated
-                if (selectedObject == null && hit.transform.gameObject.name != "Highlight(Clone)")
+                if (modObject == null && hit.transform.gameObject.name != "Highlight(Clone)")
                 {
                     //Get the correct texture coordinates on the video texture
                     Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -204,26 +243,33 @@ public class Control2 : MonoBehaviour
                         //Check for newly created highlight in list of all highlights
                         if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
                         {
-                            //Make the newly created highlight the selectedObject
-                            selectedObject = g;
+                            //Make the newly created highlight the modObject
+                            modObject = g;
                             break;
                         }
                     }
                 }
 
                 //Check if user wants to manipulate an already existing highlight
-                if (selectedObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
+                if (modObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
                 {
-                    //Set hit highlight as selectedObject
-                    selectedObject = hit.transform.gameObject;
+                    //Set hit highlight as modObject
+                    modObject = hit.transform.gameObject;
                 }
             }
         }
 
-        if (selectedObject != null)
+        if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
-            //Check if new position is is nt on top of an existing highlight
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "360MediaSphere")
+            //Translate highlight while it is selected
+            modObject.GetComponent<HighlightMemory>().setTime(mp.GetCurrentPos());
+            mh.MoveItem(modObject, hit.point);
+        }
+
+        //Check if the R2-Button is not pressed anymore
+        if (Input.GetButtonUp("R2-Android"))
+        {
+            if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -231,16 +277,11 @@ public class Control2 : MonoBehaviour
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
-                mh.ModifyItem(selectedObject, hit.point, mp.GetCurrentPos(), "Single", coords);
-                Debug.Log("Modifying");
-            }
-        }
+                mh.ModifyItem(modObject, hit.point, mp.GetCurrentPos(), modObject.GetComponent<HighlightMemory>().getType(), coords);
 
-        //Check if the R2-Button is not pressed anymore
-        if (Input.GetButtonUp("R2-Android"))
-        {
-            //Deselect highlight
-            selectedObject = null;
+                //Deselect highlight
+                modObject = null;
+            }
         }
 
         if (Input.GetButton("L2-Android"))
@@ -249,11 +290,10 @@ public class Control2 : MonoBehaviour
         }
 
         //Check if the up DPad-Button is pressed
-        if (Input.GetAxisRaw("DPad-Vertical-Android") < 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Android") > 0)
         {
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5) 
             {
-                StartCoroutine(ShowText("5 Sekunden vor Ende"));
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
                 {
                     if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
@@ -264,20 +304,19 @@ public class Control2 : MonoBehaviour
                             index += mp.GetMovieList().Count;
                         }
                         mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
-                        StartCoroutine(ShowText("Video wurde geändert auf " + mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf("."))));
                         break;
                     }
                 }
-                StartCoroutine("Next: " + ShowText(mp.StartVideo()));
+                StartCoroutine(ShowText(mp.StartVideo()));
             }
             else
             {
-                mp.JumpToPos((int) mp.GetMovieLength().TotalMilliseconds - 3000);
+                mp.JumpToPos((int) mp.GetMovieLength().TotalSeconds - 3);
             }
         }
 
         //Check if the down DPad-Button is pressed
-        if (Input.GetAxisRaw("DPad-Vertical-Android") > 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Android") < 0)
         {
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
@@ -294,7 +333,7 @@ public class Control2 : MonoBehaviour
                         break;
                     }
                 }
-                StartCoroutine(ShowText("Previous: " + mp.StartVideo()));
+                StartCoroutine(ShowText(mp.StartVideo()));
             }
             else
             {
@@ -348,17 +387,36 @@ public class Control2 : MonoBehaviour
 
         }
 
-        if (Input.GetButton("R1-Windows"))
+        if (Input.GetButtonDown("R1-Windows"))
         {
-            if(selectedObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name != "Highlight(Clone)")
+            if(Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
-                mh.ConnectItems(selectedObject);
+                if (conObject != null)
+                {
+                    mh.ConnectItems(conObject, hit.transform.gameObject);
+                    conObject = null;
+                }
+                else if (conObject == null)
+                {
+                    conObject = hit.transform.gameObject;
+                }
             }
         }
 
         if (Input.GetButton("L1-Windows"))
         {
-
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            {
+                if (conObject != null)
+                {
+                    mh.DisconnectItems(conObject);
+                    conObject = null;
+                }
+                else if (conObject == null)
+                {
+                    conObject = hit.transform.gameObject;
+                }
+            }
         }
 
         //Check if the R2-Button is pressed
@@ -427,7 +485,7 @@ public class Control2 : MonoBehaviour
             if (stMenu.enabled == false && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check if highlight was already spawned and needs to be manipulated
-                if (selectedObject == null && hit.transform.gameObject.name != "Highlight(Clone)")
+                if (modObject == null && hit.transform.gameObject.name != "Highlight(Clone)")
                 {
                     //Get the correct texture coordinates on the video texture
                     Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -444,36 +502,33 @@ public class Control2 : MonoBehaviour
                         //Check for newly created highlight in list of all highlights
                         if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
                         {
-                            //Make the newly created highlight the selectedObject
-                            selectedObject = g;
+                            //Make the newly created highlight the modObject
+                            modObject = g;
                             break;
                         }
                     }
                 }
 
                 //Check if user wants to manipulate an already existing highlight
-                if (selectedObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
+                if (modObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
                 {
-                    //Set hit highlight as selectedObject
-                    selectedObject = hit.transform.gameObject;
+                    //Set hit highlight as modObject
+                    modObject = hit.transform.gameObject;
                 }
             }
         }
 
-        if (selectedObject != null)
+        if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
-            //Check if new position is is nt on top of an existing highlight
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "360MediaSphere")
-            {
-                //Translate highlight while it is selected
-                mh.MoveItem(selectedObject, hit.point);
-            }
+            //Translate highlight while it is selected
+            modObject.GetComponent<HighlightMemory>().setTime(mp.GetCurrentPos());
+            mh.MoveItem(modObject, hit.point);
         }
 
         //Check if the R2-Button is not pressed anymore
         if (Input.GetButtonUp("R2-Windows"))
         {
-            if (selectedObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "360MediaSphere")
+            if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -481,10 +536,10 @@ public class Control2 : MonoBehaviour
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
-                mh.ModifyItem(selectedObject, hit.point, mp.GetCurrentPos(), "Single", coords);
+                mh.ModifyItem(modObject, hit.point, mp.GetCurrentPos(), modObject.GetComponent<HighlightMemory>().getType(), coords);
 
                 //Deselect highlight
-                selectedObject = null;
+                modObject = null;
             }
         }
 

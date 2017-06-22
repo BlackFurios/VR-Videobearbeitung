@@ -251,7 +251,7 @@ public class Control : MonoBehaviour
                 {
                     case "Connect":
                         //Connects the currently selected to another highlight, if possible
-                        StartCoroutine(ShowText(mh.ConnectItems(selectedObject)));
+                        //StartCoroutine(ShowText(mh.ConnectItems(selectedObject)));
                         ConfigureMenu(hlMenu, false);
                         break;
                     case "Disconnect":
@@ -305,7 +305,7 @@ public class Control : MonoBehaviour
                         StartCoroutine(WaitForButton());
 
                         //
-                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Prev")));
+                        //StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Prev")));
                         break;
                     case "DisconnectNext":
                         //Close all opened Menus
@@ -316,7 +316,7 @@ public class Control : MonoBehaviour
                         StartCoroutine(WaitForButton());
 
                         //
-                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Next")));
+                        //StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Next")));
                         break;
                     case "DisconnectBoth":
                         //Close all opened Menus
@@ -327,7 +327,7 @@ public class Control : MonoBehaviour
                         StartCoroutine(WaitForButton());
 
                         //
-                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Both")));
+                        //StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Both")));
                         break;
                     case "Close":
                         //Closes the disconnectMenu
@@ -540,7 +540,7 @@ public class Control : MonoBehaviour
                 {
                     case "Connect":
                         //Connects the currently selected to another highlight, if possible
-                        StartCoroutine(ShowText(mh.ConnectItems(selectedObject)));
+                        //StartCoroutine(ShowText(mh.ConnectItems(selectedObject)));
                         ConfigureMenu(hlMenu, false);
                         break;
                     case "Disconnect":
@@ -594,7 +594,7 @@ public class Control : MonoBehaviour
                         StartCoroutine(WaitForButton());
 
                         //
-                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Prev")));
+                        //StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Prev")));
                         break;
                     case "DisconnectNext":
                         //Close all opened Menus
@@ -605,7 +605,7 @@ public class Control : MonoBehaviour
                         StartCoroutine(WaitForButton());
 
                         //
-                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Next")));
+                        //StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Next")));
                         break;
                     case "DisconnectBoth":
                         //Close all opened Menus
@@ -616,7 +616,7 @@ public class Control : MonoBehaviour
                         StartCoroutine(WaitForButton());
 
                         //
-                        StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Both")));
+                        //StartCoroutine(ShowText(mh.DisconnectItems(selectedObject, "Both")));
                         break;
                     case "Close":
                         //Closes the disconnectMenu

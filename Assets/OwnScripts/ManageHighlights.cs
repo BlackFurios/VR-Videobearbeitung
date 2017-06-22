@@ -42,6 +42,11 @@ public class ManageHighlights : MonoBehaviour
                         //Show this highlight
                         g.GetComponent<Renderer>().enabled = true;
                         g.GetComponent<MeshCollider>().enabled = true;
+
+                        if (g.GetComponent<HighlightMemory>().getNext() != null)
+                        {
+                            DrawLine(g, g.GetComponent<HighlightMemory>().getNext());
+                        }
                     }
                     else
                     {
@@ -56,14 +61,6 @@ public class ManageHighlights : MonoBehaviour
                     g.GetComponent<Renderer>().enabled = false;
                     g.GetComponent<MeshCollider>().enabled = false;
                 }
-            }
-
-            //Draw line if this highlight is shown and it is connected to a next highlight
-            if (g.GetComponent<Renderer>().enabled == true && g.GetComponent<HighlightMemory>().getNext() != null)
-            {
-                //Draws a line to show the connection
-                g.GetComponent<LineRenderer>().SetPosition(0, transform.position);
-                g.GetComponent<LineRenderer>().SetPosition(1, g.GetComponent<HighlightMemory>().getNext().transform.position);
             }
         }
 	}
@@ -192,6 +189,9 @@ public class ManageHighlights : MonoBehaviour
         var eulRot = modRot.eulerAngles;
         eulRot.x = eulRot.x + 90;
         modRot.eulerAngles = eulRot;
+
+        current.transform.position = modPos;
+        current.transform.rotation = modRot;
     }
 
     public void ClearList()
@@ -239,159 +239,119 @@ public class ManageHighlights : MonoBehaviour
         return "Highlight successfully removed";
     }
 
-    public String ConnectItems(GameObject selected)
+    public String ConnectItems(GameObject selected, GameObject other)
     {
-        RaycastHit hit;
-
-        //Check if Raycast hits a highlight
-        if(Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+        //Check if selected highlight and other highlight are the same highlight
+        if (selected != other)
         {
-            var other = hit.transform.gameObject;
-
-            //Checks if currently selected highlight comes after the other highlight
-            if (selected.GetComponent<HighlightMemory>().getTime() > other.GetComponent<HighlightMemory>().getTime())
+            //
+            switch (TimeSpan.Compare(selected.GetComponent<HighlightMemory>().getTime(), other.GetComponent<HighlightMemory>().getTime()))
             {
-                //Checks if one of the highlights already has this kind of connection
-                if (selected.GetComponent<HighlightMemory>().getPrev() != null || other.GetComponent<HighlightMemory>().getNext() != null)
-                {
-                    return "One of the highlights is already connected";
-                }
-                else
-                {
-                    //Connects both highlights to each other
-                    selected.GetComponent<HighlightMemory>().setPrev(other);
-                    other.GetComponent<HighlightMemory>().setNext(selected);
+                //selected.time -> other.time
+                case -1:
+                    //
+                    if (selected.GetComponent<HighlightMemory>().getNext() != null)
+                    {
+                        return "First highlight already has a next highlight\nPlease disonnect first";
+                    }
+                    //
+                    else if (other.GetComponent<HighlightMemory>().getPrev() != null)
+                    {
+                        return "Second highlight already has a previous highlight\nPlease disonnect first";
+                    }
+                    //
+                    else
+                    {
+                        selected.GetComponent<HighlightMemory>().setNext(other);
+                        other.GetComponent<HighlightMemory>().setPrev(selected);
 
-                    //Changes type of both highlights to chain
-                    selected.GetComponent<HighlightMemory>().setType("Chain");
-                    other.GetComponent<HighlightMemory>().setType("Chain");
+                        DrawLine(selected, other);
+                        return "Highlights successfully connected";
+                    }
+                //selected.time = other.time
+                case 0:
+                    //selected.texPos != other.texPos
+                    if (!selected.GetComponent<HighlightMemory>().getTexPos().Equals(other.GetComponent<HighlightMemory>().getTexPos()))
+                    {
+                        selected.GetComponent<HighlightMemory>().setNext(other);
+                        other.GetComponent<HighlightMemory>().setPrev(selected);
 
-                    //Draws a line to show the connection
-                    DrawLine(selected, other);
+                        DrawLine(selected, other);
+                        return "Highlights successfully connected";
+                    }
+                    //selected.texPos = other.texPos
+                    else
+                    {
+                        return "Both highlights are at the same position and time in video";
+                    }
+                //other.time -> selected.time
+                case 1:
+                    //
+                    if (selected.GetComponent<HighlightMemory>().getPrev() != null)
+                    {
+                        return "First highlight already has a previous highlight\nPlease disonnect first";
+                    }
+                    //
+                    else if (other.GetComponent<HighlightMemory>().getNext() != null)
+                    {
+                        return "Second highlight already has a next highlight\nPlease disonnect first";
+                    }
+                    //
+                    else
+                    {
+                        selected.GetComponent<HighlightMemory>().setPrev(other);
+                        other.GetComponent<HighlightMemory>().setNext(selected);
 
-                    return "Highlights successfully connected";
-                }
-            }
-            //Checks if currently selected highlight comes before the other highlight
-            else if (selected.GetComponent<HighlightMemory>().getTime() < other.GetComponent<HighlightMemory>().getTime())
-            {
-                //Checks if one of the highlights already has this kind of connection
-                if (selected.GetComponent<HighlightMemory>().getNext() != null || other.GetComponent<HighlightMemory>().getPrev() != null)
-                {
-                    return "One of the highlights is already connected";
-                }
-                else
-                {
-                    //Connects both highlights to each other
-                    selected.GetComponent<HighlightMemory>().setNext(other);
-                    other.GetComponent<HighlightMemory>().setPrev(selected);
-
-                    //Changes type of both highlights to chain
-                    selected.GetComponent<HighlightMemory>().setType("Chain");
-                    other.GetComponent<HighlightMemory>().setType("Chain");
-
-                    //Draws a line to show the connection
-                    DrawLine(selected, other);
-
-                    return "Highlights successfully connected";
-                }
-            }
-            else
-            {
-                return "No seperate highlights selected";
+                        DrawLine(other, selected);
+                        return "Highlights successfully connected";
+                    }
+                default:
+                    return "ERROR: Comparison failes";
             }
         }
         else
         {
-            return "No highlight to connect to selected";
+            return "Can not connect highlight to itself";
         }
     }
 
-    public String DisconnectItems(GameObject selected, String mode)
+    public String DisconnectItems(GameObject selected)
     {
-        //Check if this highlight has a previous or a next highlight
-        if (selected.GetComponent<HighlightMemory>().getPrev() != null || selected.GetComponent<HighlightMemory>().getNext() != null)
+        //
+        if (selected.GetComponent<HighlightMemory>().getNext() != null && selected.GetComponent<HighlightMemory>().getPrev() != null)
         {
-            RaycastHit hit;
+            selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(selected.GetComponent<HighlightMemory>().getNext());
+            selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(selected.GetComponent<HighlightMemory>().getPrev());
 
-            //Check if Raycast hits a highlight
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
-            {
-                var other = hit.transform.gameObject;
+            selected.GetComponent<HighlightMemory>().setPrev(null);
+            selected.GetComponent<HighlightMemory>().setNext(null);
 
-                //Check which connections will be deleted
-                switch (mode)
-                {
-                    case "Prev":
-                        //Check if this highlight has a previous highlight
-                        if (selected.GetComponent<HighlightMemory>().getPrev() != null)
-                        {
-                            //Set the next parameter on the previous highlight to null then destroy the selected highlight
-                            selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
-                            selected.GetComponent<HighlightMemory>().setPrev(null);
-                        }
-                        break;
-                    case "Next":
-                        //Check if this highlight has a next highlight
-                        if (selected.GetComponent<HighlightMemory>().getNext() != null)
-                        {
-                            //Set the previous parameter on the next highlight to null then destroy the selected highlight
-                            selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
-                            selected.GetComponent<HighlightMemory>().setNext(null);
-                        }
-                        break;
-                    case "Both":
-                        //Check if this highlight has a next and a previous highlight
-                        if (selected.GetComponent<HighlightMemory>().getPrev() != null && selected.GetComponent<HighlightMemory>().getNext() != null)
-                        {
-                            //Set the next parameter on the previous highlight to null then destroy the selected highlight
-                            selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
-                            selected.GetComponent<HighlightMemory>().setPrev(null);
-
-                            //Set the previous parameter on the next highlight to null then destroy the selected highlight
-                            selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
-                            selected.GetComponent<HighlightMemory>().setNext(null);
-                        }
-                        break;
-                    default:
-                        break;
-                }
-
-                //Checks if currently selected highlight comes after the other highlight
-                if (selected.GetComponent<HighlightMemory>().getTime() > other.GetComponent<HighlightMemory>().getTime())
-                {
-                    //
-                    selected.GetComponent<HighlightMemory>().setPrev(null);
-                    other.GetComponent<HighlightMemory>().setNext(null);
-
-                    return "Highlights successfully disconnected";
-                }
-                //Checks if currently selected highlight comes before the other highlight
-                else if (selected.GetComponent<HighlightMemory>().getTime() < other.GetComponent<HighlightMemory>().getTime())
-                {
-                    //
-                    selected.GetComponent<HighlightMemory>().setNext(null);
-                    other.GetComponent<HighlightMemory>().setPrev(null);
-
-                    return "Highlights successfully disconnected";
-                }
-                else
-                {
-                    return "No timely seperate highlights selected";
-                }
-            }
-            else
-            {
-                return "No highlight to disconnect selected";
-            }
+            return "Successfully disconnected this highlight from any connections";
         }
+        //
+        else if (selected.GetComponent<HighlightMemory>().getNext() != null)
+        {
+            selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
+            selected.GetComponent<HighlightMemory>().setNext(null);
+
+            return "Successfully disconnected this highlight\nfrom his connection to the next highlight";
+        }
+        //
+        else if (selected.GetComponent<HighlightMemory>().getPrev() != null)
+        {
+            selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
+            selected.GetComponent<HighlightMemory>().setPrev(null);
+
+            return "Successfully disconnected this highlight\nfrom his connection to the previous highlight";
+        }
+        //
         else
         {
-            return "Slected highlight is not connected to anything";
+            return "This highlight has no connections to disconnect";
         }
     }
 
-    public void DrawLine(GameObject current, GameObject other)
+    private void DrawLine(GameObject current, GameObject other)
     {
         //The line renderer component of the current highlight
         LineRenderer lr = current.GetComponent<LineRenderer>();
