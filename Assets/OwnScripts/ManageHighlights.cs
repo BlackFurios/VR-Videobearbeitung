@@ -192,6 +192,17 @@ public class ManageHighlights : MonoBehaviour
 
         current.transform.position = modPos;
         current.transform.rotation = modRot;
+
+        //
+        if (current.GetComponent<HighlightMemory>().getNext() != null)
+        {
+            DrawLine(current, current.GetComponent<HighlightMemory>().getNext().transform.position);
+        }
+        //
+        else if (current.GetComponent<HighlightMemory>().getPrev() != null)
+        {
+            DrawLine(current.GetComponent<HighlightMemory>().getPrev(), current.transform.position);
+        }
     }
 
     public void ClearList()
@@ -265,6 +276,9 @@ public class ManageHighlights : MonoBehaviour
                         selected.GetComponent<HighlightMemory>().setNext(other);
                         other.GetComponent<HighlightMemory>().setPrev(selected);
 
+                        selected.GetComponent<HighlightMemory>().setType("Chain");
+                        other.GetComponent<HighlightMemory>().setType("Chain");
+
                         DrawLine(selected, other.transform.position);
                         return "Highlights successfully connected";
                     }
@@ -275,6 +289,9 @@ public class ManageHighlights : MonoBehaviour
                     {
                         selected.GetComponent<HighlightMemory>().setNext(other);
                         other.GetComponent<HighlightMemory>().setPrev(selected);
+
+                        selected.GetComponent<HighlightMemory>().setType("Chain");
+                        other.GetComponent<HighlightMemory>().setType("Chain");
 
                         DrawLine(selected, other.transform.position);
                         return "Highlights successfully connected";
@@ -302,6 +319,9 @@ public class ManageHighlights : MonoBehaviour
                         selected.GetComponent<HighlightMemory>().setPrev(other);
                         other.GetComponent<HighlightMemory>().setNext(selected);
 
+                        selected.GetComponent<HighlightMemory>().setType("Chain");
+                        other.GetComponent<HighlightMemory>().setType("Chain");
+
                         DrawLine(other, selected.transform.position);
                         return "Highlights successfully connected";
                     }
@@ -320,8 +340,11 @@ public class ManageHighlights : MonoBehaviour
         //
         if (selected.GetComponent<HighlightMemory>().getNext() != null && selected.GetComponent<HighlightMemory>().getPrev() != null)
         {
-            selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(selected.GetComponent<HighlightMemory>().getNext());
-            selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(selected.GetComponent<HighlightMemory>().getPrev());
+            ConnectItems(selected.GetComponent<HighlightMemory>().getPrev(), selected.GetComponent<HighlightMemory>().getNext());
+
+            selected.GetComponent<LineRenderer>().enabled = false;
+
+            selected.GetComponent<HighlightMemory>().setType("Single");
 
             selected.GetComponent<HighlightMemory>().setPrev(null);
             selected.GetComponent<HighlightMemory>().setNext(null);
@@ -331,6 +354,10 @@ public class ManageHighlights : MonoBehaviour
         //
         else if (selected.GetComponent<HighlightMemory>().getNext() != null)
         {
+            selected.GetComponent<LineRenderer>().enabled = false;
+
+            selected.GetComponent<HighlightMemory>().setType("Single");
+
             selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
             selected.GetComponent<HighlightMemory>().setNext(null);
 
@@ -339,6 +366,10 @@ public class ManageHighlights : MonoBehaviour
         //
         else if (selected.GetComponent<HighlightMemory>().getPrev() != null)
         {
+            selected.GetComponent<HighlightMemory>().getPrev().GetComponent<LineRenderer>().enabled = false;
+
+            selected.GetComponent<HighlightMemory>().setType("Single");
+
             selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
             selected.GetComponent<HighlightMemory>().setPrev(null);
 

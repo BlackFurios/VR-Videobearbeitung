@@ -453,6 +453,17 @@ public class MediaPlayer : MonoBehaviour
         return movieList[index].movie;
     }
 
+    public String GetTestOutput()
+    {
+#if (UNITY_ANDROID && !UNITY_EDITOR)
+        AndroidJavaObject testParams = mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams");
+        int i = testParams.Call<int>("getSpeed"); 
+        return "Output: " + i;
+#else
+        return "This is a test output";
+#endif
+    }
+
     public void SetPlaybackSpeed(int mode)
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)

@@ -102,7 +102,7 @@ public class Control : MonoBehaviour
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         if (Input.GetButton("A-Android"))
         {
-
+            StartCoroutine(ShowText(mp.GetTestOutput()));
         }
 
         //Check if the B-Button is pressed
@@ -130,27 +130,66 @@ public class Control : MonoBehaviour
 
         if (Input.GetButtonDown("R1-Android"))
         {
+            //
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
-                if (conObject != null && hit.transform.gameObject.name ==  "Highlight(Clone)")
+                //
+                if (conObject != null && hit.transform.gameObject.name == "Highlight(Clone)")
                 {
                     mh.ConnectItems(conObject, hit.transform.gameObject);
                     conObject = null;
                 }
+                //
                 else if (conObject != null && hit.transform.gameObject.name != "Highlight(Clone)")
                 {
+                    //
                     Vector3 hitPos = hit.point - Camera.main.transform.position;
                     hitPos.x = hitPos.x * 0.9f;
                     hitPos.y = hitPos.y * 0.9f;
                     hitPos.z = hitPos.z * 0.9f;
 
+                    //Get the correct texture coordinates on the video texture
+                    Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                    Vector2 coords = hit.textureCoord;
+                    coords.x *= tex.width;
+                    coords.y *= tex.height;
+
+                    //
                     mh.DrawLine(conObject, hitPos);
+
+                    //
+                    StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
+
+                    //
+                    foreach (GameObject g in mh.GetList())
+                    {
+                        //Check for newly created highlight in list of all highlights
+                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
+                        {
+                            //
+                            mh.ConnectItems(conObject, g);
+                            break;
+                        }
+                    }
                 }
+                //
                 else
                 {
                     conObject = hit.transform.gameObject;
                 }
             }
+        }
+
+        if (conObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
+        {
+            //
+            Vector3 hitPos = hit.point - Camera.main.transform.position;
+            hitPos.x = hitPos.x * 0.9f;
+            hitPos.y = hitPos.y * 0.9f;
+            hitPos.z = hitPos.z * 0.9f;
+
+            //Translate highlight while it is selected
+            mh.DrawLine(conObject, hitPos);
         }
 
         if (Input.GetButton("L1-Android"))
@@ -301,7 +340,7 @@ public class Control : MonoBehaviour
         //Check if the up DPad-Button is pressed
         if (Input.GetAxisRaw("DPad-Vertical-Android") > 0)
         {
-            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5) 
+            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
             {
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
                 {
@@ -320,7 +359,7 @@ public class Control : MonoBehaviour
             }
             else
             {
-                mp.JumpToPos((int) mp.GetMovieLength().TotalSeconds - 3);
+                mp.JumpToPos((int)mp.GetMovieLength().TotalSeconds - 3);
             }
         }
 
@@ -370,7 +409,7 @@ public class Control : MonoBehaviour
 #else
         if (Input.GetButton("A-Windows"))
         {
-
+            StartCoroutine(ShowText(mp.GetTestOutput()));
         }
 
         //Check if the B-Button is pressed
@@ -398,27 +437,66 @@ public class Control : MonoBehaviour
 
         if (Input.GetButtonDown("R1-Windows"))
         {
+            //
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
-                if (conObject != null && hit.transform.gameObject.name ==  "Highlight(Clone)")
+                //
+                if (conObject != null && hit.transform.gameObject.name == "Highlight(Clone)")
                 {
                     mh.ConnectItems(conObject, hit.transform.gameObject);
                     conObject = null;
                 }
+                //
                 else if (conObject != null && hit.transform.gameObject.name != "Highlight(Clone)")
                 {
+                    //
                     Vector3 hitPos = hit.point - Camera.main.transform.position;
                     hitPos.x = hitPos.x * 0.9f;
                     hitPos.y = hitPos.y * 0.9f;
                     hitPos.z = hitPos.z * 0.9f;
 
+                    //Get the correct texture coordinates on the video texture
+                    Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                    Vector2 coords = hit.textureCoord;
+                    coords.x *= tex.width;
+                    coords.y *= tex.height;
+
+                    //
                     mh.DrawLine(conObject, hitPos);
+
+                    //
+                    StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
+
+                    //
+                    foreach (GameObject g in mh.GetList())
+                    {
+                        //Check for newly created highlight in list of all highlights
+                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
+                        {
+                            //
+                            mh.ConnectItems(conObject, g);
+                            break;
+                        }
+                    }
                 }
+                //
                 else
                 {
                     conObject = hit.transform.gameObject;
                 }
             }
+        }
+
+        if (conObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
+        {
+            //
+            Vector3 hitPos = hit.point - Camera.main.transform.position;
+            hitPos.x = hitPos.x * 0.9f;
+            hitPos.y = hitPos.y * 0.9f;
+            hitPos.z = hitPos.z * 0.9f;
+
+            //Translate highlight while it is selected
+            mh.DrawLine(conObject, hitPos);
         }
 
         if (Input.GetButton("L1-Windows"))
@@ -569,7 +647,7 @@ public class Control : MonoBehaviour
         //Check if the up DPad-Button is pressed
         if (Input.GetAxisRaw("DPad-Vertical-Windows") > 0)
         {
-            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5) 
+            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
             {
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
                 {
@@ -588,7 +666,7 @@ public class Control : MonoBehaviour
             }
             else
             {
-                mp.JumpToPos((int) mp.GetMovieLength().TotalSeconds - 3);
+                mp.JumpToPos((int)mp.GetMovieLength().TotalSeconds - 3);
             }
         }
 
@@ -667,13 +745,11 @@ public class Control : MonoBehaviour
         SaveData data = new SaveData();
         CreateIDList(data);
 
-        StartCoroutine(ShowText(data.idList.Count.ToString()));
-
         //Serialize the file and close the filestream
         bf.Serialize(fs, data);
         fs.Close();
 
-        //StartCoroutine(ShowText(video + " is saved"));
+        StartCoroutine(ShowText(video + " is saved"));
     }
 
     void Load(String video)
