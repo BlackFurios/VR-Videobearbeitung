@@ -45,7 +45,7 @@ public class ManageHighlights : MonoBehaviour
 
                         if (g.GetComponent<HighlightMemory>().getNext() != null)
                         {
-                            DrawLine(g, g.GetComponent<HighlightMemory>().getNext());
+                            DrawLine(g, g.GetComponent<HighlightMemory>().getNext().transform.position);
                         }
                     }
                     else
@@ -265,7 +265,7 @@ public class ManageHighlights : MonoBehaviour
                         selected.GetComponent<HighlightMemory>().setNext(other);
                         other.GetComponent<HighlightMemory>().setPrev(selected);
 
-                        DrawLine(selected, other);
+                        DrawLine(selected, other.transform.position);
                         return "Highlights successfully connected";
                     }
                 //selected.time = other.time
@@ -276,7 +276,7 @@ public class ManageHighlights : MonoBehaviour
                         selected.GetComponent<HighlightMemory>().setNext(other);
                         other.GetComponent<HighlightMemory>().setPrev(selected);
 
-                        DrawLine(selected, other);
+                        DrawLine(selected, other.transform.position);
                         return "Highlights successfully connected";
                     }
                     //selected.texPos = other.texPos
@@ -302,7 +302,7 @@ public class ManageHighlights : MonoBehaviour
                         selected.GetComponent<HighlightMemory>().setPrev(other);
                         other.GetComponent<HighlightMemory>().setNext(selected);
 
-                        DrawLine(other, selected);
+                        DrawLine(other, selected.transform.position);
                         return "Highlights successfully connected";
                     }
                 default:
@@ -351,7 +351,7 @@ public class ManageHighlights : MonoBehaviour
         }
     }
 
-    private void DrawLine(GameObject current, GameObject other)
+    public void DrawLine(GameObject current, Vector3 otherPos)
     {
         //The line renderer component of the current highlight
         LineRenderer lr = current.GetComponent<LineRenderer>();
@@ -365,7 +365,7 @@ public class ManageHighlights : MonoBehaviour
 
         //Set start- and endpoint of line renderer
         lr.SetPosition(0, current.transform.position);
-        lr.SetPosition(1, other.transform.position);
+        lr.SetPosition(1, otherPos);
 
 
     }
