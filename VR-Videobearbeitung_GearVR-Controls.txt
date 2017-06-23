@@ -1,20 +1,24 @@
 Controls (Android|Windows):
 
-A:	Pause video
+A:			-
 
-B:	Show current time
+B:			Pause video
 
-Y:	Restart video
+X:			Delete highlight
 
-X:	Open StartMenu
+Y:			-
 
-L1:	Reverse video
+R1:			Connect highlight
 
-R1:	Forward video
+L1:			Disconnect highlight
 
-L2:	Creates highlight
+R2:			Interact with menu
+			Spawn highlight
+			Move highlight
 
-R2:	1. Opens HighlightMenu of the selected highlight
-	2. Activates options in the opened StartMenu (DropdownList, Play Video, Save)
-	3. Activates the selected video in the dropdownlist of the HighlightMenu
-	4. Activates options in the opened HighlightMenu (Connect, Disconnect, GetInfo, Delete, Close)
+L2:			Save
+
+DPad-Vertical:		Jump to end/start of video
+			Switch to next/previous video
+
+DPad-Horizontal:	Make video faster/slow
