@@ -102,7 +102,7 @@ public class Control : MonoBehaviour
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         if (Input.GetButton("A-Android"))
         {
-            StartCoroutine(ShowText(mp.GetTestOutput()));
+            
         }
 
         //Check if the B-Button is pressed
@@ -125,7 +125,27 @@ public class Control : MonoBehaviour
 
         if (Input.GetButton("Y-Android"))
         {
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            {
+                String info = "";
 
+                info += "Video:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getVideo();
+                info += "\nTime:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getTime().ToString();
+                info += "\nTexPos:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getTexPos().ToString();
+                info += "\nType:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getType();
+
+                if (hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev() != null)
+                {
+                    info += "\nPrev:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                }
+
+                if(hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
+                {
+                    info += "\nNext:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getNext().ToString();
+                }
+
+                StartCoroutine(ShowText(info));
+            }
         }
 
         if (Input.GetButtonDown("R1-Android"))
@@ -393,12 +413,18 @@ public class Control : MonoBehaviour
         if (Input.GetAxis("DPad-Horizontal-Android") > 0)
         {
             mp.SetPlaybackSpeed(1);
+
+            StartCoroutine(ShowText("Faster"));
+            StartCoroutine(ShowText(mp.TestOutput()));
         }
 
         //Check if the left DPad-Button is pressed
         if (Input.GetAxis("DPad-Horizontal-Android") < 0)
         {
             mp.SetPlaybackSpeed(2);
+
+            StartCoroutine(ShowText("Slower"));
+            StartCoroutine(ShowText(mp.TestOutput()));
         }
 
         //Check if the vertical DPad-Buttons are not pressed anymore
@@ -409,7 +435,7 @@ public class Control : MonoBehaviour
 #else
         if (Input.GetButton("A-Windows"))
         {
-            StartCoroutine(ShowText(mp.GetTestOutput()));
+            
         }
 
         //Check if the B-Button is pressed
@@ -432,7 +458,37 @@ public class Control : MonoBehaviour
 
         if (Input.GetButton("Y-Windows"))
         {
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            {
+                String info = "";
 
+                info += "Video:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getVideo();
+                info += "\nTime:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getTime().ToString();
+                info += "\nTexPos:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getTexPos().ToString();
+                info += "\nType:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getType();
+
+                if (hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev() != null)
+                {
+                    //info += "\nPrev:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                    info += "\nPrev:\tYes";
+                }
+                else
+                {
+                    info += "\nPrev:\tNo" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                }
+
+                if(hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
+                {
+                    //info += "\nNext:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getNext().ToString();
+                    info += "\nPrev:\tYes" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                }
+                else
+                {
+                    info += "\nPrev:\tNo" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                }
+
+                StartCoroutine(ShowText(info));
+            }
         }
 
         if (Input.GetButtonDown("R1-Windows"))

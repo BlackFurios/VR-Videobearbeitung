@@ -267,10 +267,10 @@ public class MediaPlayer : MonoBehaviour
 
             startedVideo = true;
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+            playerParams = CreatePlayerParams();
+
 			mediaPlayer = StartVideoPlayerOnTextureId(textureWidth, textureHeight, mediaFullPath);
 			mediaRenderer.material.mainTexture = nativeTexture;
-
-            playerParams = CreateMediaPlayerParams();
 #else
             vp.Prepare();
 
@@ -283,7 +283,7 @@ public class MediaPlayer : MonoBehaviour
             mediaPlayer.Call("reset");
 			mediaPlayer.Call("setDataSource", mediaFullPath);
 			mediaPlayer.Call("prepare");
-			mediaPlayer.Call("setLooping", true);
+			mediaPlayer.Call("setLooping", false);
 			mediaPlayer.Call("start");
 		}
 		catch (Exception e)
@@ -453,21 +453,20 @@ public class MediaPlayer : MonoBehaviour
         return movieList[index].movie;
     }
 
-    public String GetTestOutput()
+    public String TestOutput()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        AndroidJavaObject testParams = mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams");
-        int i = testParams.Call<int>("getSpeed"); 
-        return "Output: " + i;
+        float val = playerParams.Call<float>("getSpeed");
+        return val.ToString();
 #else
-        return "This is a test output";
+        return "";
 #endif
     }
 
     public void SetPlaybackSpeed(int mode)
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        if (mediaPlayer != null && playerParams != null)
+        if (mediaPlayer != null)
         {
             //Set video playback to normal (mode 0)
             if (mode == 0)
@@ -638,6 +637,8 @@ public class MediaPlayer : MonoBehaviour
 			mediaPlayer.Call("prepare");
 			mediaPlayer.Call("setLooping", false);
 			mediaPlayer.Call("start");
+
+            Debug.Log("Started mediaPlayer successfully");
 		}
 		catch (Exception e)
 		{
@@ -647,25 +648,31 @@ public class MediaPlayer : MonoBehaviour
 		return mediaPlayer;
 	}
 
-    AndroidJavaObject CreateMediaPlayerParams()
-    {
-        Debug.Log("PlayerParams: CreateMediaPlayerParams");
-        
-        if (mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams") != null)
-        {
-            AndroidJavaObject playerParams = mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams");
-        }
-        else
-        {
-            AndroidJavaObject playerParams = new AndroidJavaObject("android/media/PlaybackParams");
+    AndroidJavaObject CreatePlayerParams()
+	{
+		AndroidJavaObject playerParams = new AndroidJavaObject("android/media/PlaybackParams");
 
-            playerParams.Call("setAudioFallbackMode", 0);
-            playerParams.Call("setPitch", 1);
-            playerParams.Call("setSpeed", 1);
-        }
+        IntPtr getSpeedMethodId = AndroidJNI.GetMethodID(playerParams.GetRawClass(),"getSpeed","()F");
+        jvalue[] parms = new jvalue[1];
+        parms[0] = new jvalue();
+        parms[0].f = 1f;
+        AndroidJNI.CallFloatMethod(playerParams.GetRawObject(), getSpeedMethodId, parms);
 
-        return playerParams;
-    }
+		try
+		{
+            playerParams = playerParams.Call<AndroidJavaObject>("setAudioFallbackMode", 0);
+			playerParams = playerParams.Call<AndroidJavaObject>("setPitch", 1);
+			playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 1);
+
+            Debug.Log("Started playerParams successfully");
+		}
+		catch (Exception e)
+		{
+			Debug.Log("Failed to create playerParams with message " + e.Message);
+		}
+
+		return playerParams;
+	}
 
     //class MediaPlayerEndListener : AndroidJavaProxy
     //{
