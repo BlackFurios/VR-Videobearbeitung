@@ -17,12 +17,14 @@ public class ManageHighlights : MonoBehaviour
     //Use this for initialization
     void Start ()
     {
+        //Sets the mediaPlayer script
         mp = GetComponent<MediaPlayer>();
 	}
 	
 	//Update is called once per frame
 	void Update ()
     {
+        //Iterate through the list of all highlights
 		foreach(GameObject g in hList)
         {
             //Check if this highlight has to be shown now
@@ -37,14 +39,17 @@ public class ManageHighlights : MonoBehaviour
                 //Check if the next or previous chain highlight of this highlight is shown if it has one
                 if (g.GetComponent<HighlightMemory>().getNext() != null || g.GetComponent<HighlightMemory>().getPrev() != null)
                 {
+                    //Check if the selected highlights next or previous highlight is visible
                     if (g.GetComponent<HighlightMemory>().getNext().GetComponent<Renderer>().enabled == true || g.GetComponent<HighlightMemory>().getPrev().GetComponent<Renderer>().enabled == true)
                     {
                         //Show this highlight
                         g.GetComponent<Renderer>().enabled = true;
                         g.GetComponent<MeshCollider>().enabled = true;
 
+                        //Check if the selected highlights next highlight is not null
                         if (g.GetComponent<HighlightMemory>().getNext() != null)
                         {
+                            //Draw a line from this highlight to its next highlight to show connection in world space
                             DrawLine(g, g.GetComponent<HighlightMemory>().getNext().transform.position);
                         }
                     }
@@ -80,6 +85,7 @@ public class ManageHighlights : MonoBehaviour
         eulRot.x = eulRot.x + 90;
         spawnRot.eulerAngles = eulRot;
 
+        //Check if the other variable is not null
         if(other != null)
         {
             //Check for every existing highlight if it is colliding with the one to be created
@@ -101,13 +107,13 @@ public class ManageHighlights : MonoBehaviour
         }
     }
 
-    //Get item from highlight list
+    //Returns the item from highlight list
     public GameObject GetItem(int index)
     {
         return hList[index];
     }
 
-    //Get complete highlight list
+    //Returns the complete highlight list
     public List<GameObject> GetList()
     {
         return hList;
@@ -121,10 +127,13 @@ public class ManageHighlights : MonoBehaviour
         //Check if this highlight is the first one to be created
         if (hList.Count != 0)
         {
+            //Iterate through the list of all highlights
             foreach (GameObject g in hList)
             {
                 //Check if spawning this highlight is possible
                 current = SpawnHighlight(pos, g);
+
+                //Check if the current is null (SpawnHighlight() has an invalid output)
                 if (current == null)
                 {
                     break;
@@ -159,8 +168,10 @@ public class ManageHighlights : MonoBehaviour
         }
     }
 
+    //Modifies an already existing highlights parameters
     public void ModifyItem(GameObject current, Vector3 pos, TimeSpan ts, String type, Vector2 texPos)
     {
+        //Check if the currently selected highlight exists
         if (current != null)
         {
             //Locate and rotate highlight according to current movement
@@ -173,9 +184,11 @@ public class ManageHighlights : MonoBehaviour
         }
         else
         {
-
+            Debug.Log("No existing highligt selected to modify");
         }
     }
+
+    //Translates a currently selected highlight to a new position
     public void MoveItem(GameObject current, Vector3 pos)
     {
         //Calculate the position of this highlight
@@ -190,21 +203,25 @@ public class ManageHighlights : MonoBehaviour
         eulRot.x = eulRot.x + 90;
         modRot.eulerAngles = eulRot;
 
+        //Translate the selected highlight
         current.transform.position = modPos;
         current.transform.rotation = modRot;
 
-        //
+        //Check if the selected highlight has a next highlight
         if (current.GetComponent<HighlightMemory>().getNext() != null)
         {
+            //Draws a line from the selected highlight to its next highlight
             DrawLine(current, current.GetComponent<HighlightMemory>().getNext().transform.position);
         }
-        //
+        //Check if the selected highlight has a previous highlight
         else if (current.GetComponent<HighlightMemory>().getPrev() != null)
         {
+            //Draws a line from the previous highlight to the selected highlight
             DrawLine(current.GetComponent<HighlightMemory>().getPrev(), current.transform.position);
         }
     }
 
+    //Empties the list of all highlights and destroys all highlight gameObjects
     public void ClearList()
     {
         //Destroy all highlights from list
@@ -245,40 +262,42 @@ public class ManageHighlights : MonoBehaviour
         //Delete highlight from list and destroy the highlight
         hList.RemoveAt(hList.IndexOf(current));
         Destroy(current);
-
-        //
+        
         return "Highlight successfully removed";
     }
 
+    //Connects two given highlights automatically with each other
     public String ConnectItems(GameObject selected, GameObject other)
     {
         //Check if selected highlight and other highlight are the same highlight
         if (selected != other)
         {
-            //
             switch (TimeSpan.Compare(selected.GetComponent<HighlightMemory>().getTime(), other.GetComponent<HighlightMemory>().getTime()))
             {
                 //selected.time -> other.time
                 case -1:
-                    //
+                    //Check if the selected highlight already has a next highlight
                     if (selected.GetComponent<HighlightMemory>().getNext() != null)
                     {
                         return "First highlight already has a next highlight\nPlease disonnect first";
                     }
-                    //
+                    //Check if the other highlight already has a previous highlight
                     else if (other.GetComponent<HighlightMemory>().getPrev() != null)
                     {
                         return "Second highlight already has a previous highlight\nPlease disonnect first";
                     }
-                    //
+                    //Check if both highlights have the necessary connections free
                     else
                     {
+                        //Set both highligts in each others connection parameter
                         selected.GetComponent<HighlightMemory>().setNext(other);
                         other.GetComponent<HighlightMemory>().setPrev(selected);
 
+                        //Change type of both highlights to "Chain"
                         selected.GetComponent<HighlightMemory>().setType("Chain");
                         other.GetComponent<HighlightMemory>().setType("Chain");
 
+                        //Draws a line from the selected highlight to the other highlight
                         DrawLine(selected, other.transform.position);
                         return "Highlights successfully connected";
                     }
@@ -287,12 +306,15 @@ public class ManageHighlights : MonoBehaviour
                     //selected.texPos != other.texPos
                     if (!selected.GetComponent<HighlightMemory>().getTexPos().Equals(other.GetComponent<HighlightMemory>().getTexPos()))
                     {
+                        //Set both highligts in each others connection parameter
                         selected.GetComponent<HighlightMemory>().setNext(other);
                         other.GetComponent<HighlightMemory>().setPrev(selected);
 
+                        //Change type of both highlights to "Chain"
                         selected.GetComponent<HighlightMemory>().setType("Chain");
                         other.GetComponent<HighlightMemory>().setType("Chain");
 
+                        //Draws a line from the selected highlight to the other highlight
                         DrawLine(selected, other.transform.position);
                         return "Highlights successfully connected";
                     }
@@ -303,25 +325,28 @@ public class ManageHighlights : MonoBehaviour
                     }
                 //other.time -> selected.time
                 case 1:
-                    //
+                    //Check if the selected highlight already has a previous highlight
                     if (selected.GetComponent<HighlightMemory>().getPrev() != null)
                     {
                         return "First highlight already has a previous highlight\nPlease disonnect first";
                     }
-                    //
+                    //Check if the other highlight already has a next highlight
                     else if (other.GetComponent<HighlightMemory>().getNext() != null)
                     {
                         return "Second highlight already has a next highlight\nPlease disonnect first";
                     }
-                    //
+                    //Check if both highlights have the necessary connections free
                     else
                     {
+                        //Set both highligts in each others connection parameter
                         selected.GetComponent<HighlightMemory>().setPrev(other);
                         other.GetComponent<HighlightMemory>().setNext(selected);
 
+                        //Change type of both highlights to "Chain"
                         selected.GetComponent<HighlightMemory>().setType("Chain");
                         other.GetComponent<HighlightMemory>().setType("Chain");
 
+                        //Draws a line from the selected highlight to the other highlight
                         DrawLine(other, selected.transform.position);
                         return "Highlights successfully connected";
                     }
@@ -335,53 +360,65 @@ public class ManageHighlights : MonoBehaviour
         }
     }
 
+    //Disconnects two given highlights automatically from each other
     public String DisconnectItems(GameObject selected)
     {
-        //
+        //Check if the selected highlight has a next and a previous highlight
         if (selected.GetComponent<HighlightMemory>().getNext() != null && selected.GetComponent<HighlightMemory>().getPrev() != null)
         {
+            //Connects the selected highlights previous highlight to the selected highlights next highlight
             ConnectItems(selected.GetComponent<HighlightMemory>().getPrev(), selected.GetComponent<HighlightMemory>().getNext());
 
+            //Disables the connection line from the selected highlight to its next highlight
             selected.GetComponent<LineRenderer>().enabled = false;
 
+            //Change type of the selected highlight to "Single"
             selected.GetComponent<HighlightMemory>().setType("Single");
 
+            //Change both next and prev parameters of the selected highlight to null
             selected.GetComponent<HighlightMemory>().setPrev(null);
             selected.GetComponent<HighlightMemory>().setNext(null);
 
             return "Successfully disconnected this highlight from any connections";
         }
-        //
+        //Check if the selected highlight only has a next highlight
         else if (selected.GetComponent<HighlightMemory>().getNext() != null)
         {
+            //Disables the connection line from the selected highlight to its next highlight
             selected.GetComponent<LineRenderer>().enabled = false;
 
+            //Change type of the selected highlight to "Single"
             selected.GetComponent<HighlightMemory>().setType("Single");
 
+            //Change the prev parameter of the selected highlights next highlight and the next parameter of the selected highlight
             selected.GetComponent<HighlightMemory>().getNext().GetComponent<HighlightMemory>().setPrev(null);
             selected.GetComponent<HighlightMemory>().setNext(null);
 
             return "Successfully disconnected this highlight\nfrom his connection to the next highlight";
         }
-        //
+        //Check if the selected highlight only has a previous highlight
         else if (selected.GetComponent<HighlightMemory>().getPrev() != null)
         {
+            //Disables the connection line from the selected highlights previous highlight to the selected highlight
             selected.GetComponent<HighlightMemory>().getPrev().GetComponent<LineRenderer>().enabled = false;
 
+            //Change type of the selected highlight to "Single"
             selected.GetComponent<HighlightMemory>().setType("Single");
 
+            //Change the prev parameter of the selected highlight and the next parameter of the selected highlights previous highlight
             selected.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
             selected.GetComponent<HighlightMemory>().setPrev(null);
 
             return "Successfully disconnected this highlight\nfrom his connection to the previous highlight";
         }
-        //
+        //Check if the selected has no connection at all
         else
         {
             return "This highlight has no connections to disconnect";
         }
     }
 
+    //Draws a line from a currently selected highlight to a given position in world space
     public void DrawLine(GameObject current, Vector3 otherPos)
     {
         //The line renderer component of the current highlight

@@ -32,24 +32,24 @@ public class Control : MonoBehaviour
 
     private String savePath;                                    //Absolute path of the save files
 
-    public class localId
+    public class localId                                        //Struct for a highlight and its own local if (without next and prev parameters)
     {
-        public GameObject g;
-        public String localID;
+        public GameObject g;                                    //The highlight as gameObject
+        public String localID;                                  //The highlights localID
 
-        public localId(GameObject a, String b)
+        public localId(GameObject a, String b)                  //Constructor of the localID struct
         {
             g = a;
             localID = b;
         }
     }
 
-    public class nextId
+    public class nextId                                         //Struct for a highlight and its next highlight as id
     {
-        public GameObject g;
-        public String nextLocalID;
+        public GameObject g;                                    //The highlight as gameObject
+        public String nextLocalID;                              //The highlights next highlight as its localID
 
-        public nextId(GameObject a, String b)
+        public nextId(GameObject a, String b)                   //Constructor of the nextID struct
         {
             g = a;
             nextLocalID = b;
@@ -60,17 +60,23 @@ public class Control : MonoBehaviour
     void Start ()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+        //The save path on a android system
         savePath = @"/storage/emulated/0/Movies/VR-Videoschnitt/Saves";
 #else
+        //The save path on a windows system
         savePath = @"C:/Users/" + Environment.UserName + "/Documents/VR-Videoschnitt/Saves";
 #endif
 
+        //Sets the manageHighlights script
         mh = GetComponent<ManageHighlights>();
+
+        //Sets the mediaPlayer script
         mp = GetComponent<MediaPlayer>();
 
         //Invert the layerMask to only ignore the the highlight layer
         layerMask = ~layerMask;
 
+        //Iterate through the list of all found videos
         for (int i = 0; i < mp.GetMovieList().Count; i++)
         {
             //Fill movieList with detected videos
@@ -80,12 +86,17 @@ public class Control : MonoBehaviour
         //Search for VRMenu and highlightMenu
         foreach (Canvas c in FindObjectsOfType<Canvas>())
         {
+            //Check if the currently found canvas is the VRMenu
             if (c.name == "VRMenu")
             {
+                //Sets the VRMenu
                 vrMenu = c;
             }
+
+            //Check if the currently found canvas is the StartMenu
             if (c.name == "StartMenu")
             {
+                //Sets the StartMenu
                 stMenu = c;
             }
         }
@@ -93,6 +104,7 @@ public class Control : MonoBehaviour
         //Search for VideoDropdownList
         list = FindObjectOfType<Dropdown>();
 
+        //Add all found videos to the dropdown list
         list.GetComponent<Dropdown>().AddOptions(videoList);
     }
 	
@@ -100,6 +112,7 @@ public class Control : MonoBehaviour
 	void Update ()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+        //
         if (Input.GetButton("A-Android"))
         {
             
@@ -119,50 +132,73 @@ public class Control : MonoBehaviour
             //Check if raycast hits the media sphere
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
+                //Delete selected highlight
                 StartCoroutine(ShowText(mh.DeleteItem(hit.transform.gameObject)));
             }
         }
 
+        //Check if the Y-Button is pressed
         if (Input.GetButton("Y-Android"))
         {
+            //Check if raycast hitss a highlight
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 String info = "";
 
+                //Add video name, time, texture position and type of the highlight to the info string
                 info += "Video:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getVideo();
                 info += "\nTime:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getTime().ToString();
                 info += "\nTexPos:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getTexPos().ToString();
                 info += "\nType:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getType();
 
+                //Check if selected highlight is connected to a previous highlight
                 if (hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev() != null)
                 {
-                    info += "\nPrev:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                    //Add "Yes" to the info string
+                    info += "\nPrev:\tYes";
+                }
+                else
+                {
+                    //Add "No" to the info string
+                    info += "\nPrev:\tNo";
                 }
 
+                //Check if selected highlight is connected to a next highlight
                 if(hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
                 {
-                    info += "\nNext:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getNext().ToString();
+                    //Add "Yes" to the info string
+                    info += "\nPrev:\tYes";
+                }
+                else
+                {
+                    //Add "No" to the info string
+                    info += "\nPrev:\tNo";
                 }
 
+                //Display info string on VRMenu in world space
                 StartCoroutine(ShowText(info));
             }
         }
 
+        //Check if the R1-Button is pressed
         if (Input.GetButtonDown("R1-Android"))
         {
-            //
+            //Check if raycast hits something
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
-                //
+                //Check if a highlight is already selected to connect and the raycast hits a highlight
                 if (conObject != null && hit.transform.gameObject.name == "Highlight(Clone)")
                 {
+                    //Connect the two highlights if possible
                     mh.ConnectItems(conObject, hit.transform.gameObject);
+
+                    //Reset the selected highlight to null
                     conObject = null;
                 }
-                //
+                //Check if a highlight is already selected to connect and the raycast hits no highlight
                 else if (conObject != null && hit.transform.gameObject.name != "Highlight(Clone)")
                 {
-                    //
+                    //Calculate the hit position for a the new highlight
                     Vector3 hitPos = hit.point - Camera.main.transform.position;
                     hitPos.x = hitPos.x * 0.9f;
                     hitPos.y = hitPos.y * 0.9f;
@@ -174,55 +210,65 @@ public class Control : MonoBehaviour
                     coords.x *= tex.width;
                     coords.y *= tex.height;
 
-                    //
+                    //Draw the connection from the selected highlight to the new highlight
                     mh.DrawLine(conObject, hitPos);
 
-                    //
+                    //Create the new highlight on the hit position
                     StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
 
-                    //
+                    //Iterate through the list of all highlights
                     foreach (GameObject g in mh.GetList())
                     {
                         //Check for newly created highlight in list of all highlights
                         if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
                         {
-                            //
+                            //Connect the newly created  highlgight to the selected highlight
                             mh.ConnectItems(conObject, g);
                             break;
                         }
                     }
                 }
-                //
-                else
+                //Check if no highlight is already selected and the raycast hits a highlight
+                else if (conObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
                 {
+                    //Select the currently hit highlight
                     conObject = hit.transform.gameObject;
                 }
             }
         }
 
+        //Check if a highlight to connect is selected
         if (conObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
-            //
+            //Calculate the currently focused position
             Vector3 hitPos = hit.point - Camera.main.transform.position;
             hitPos.x = hitPos.x * 0.9f;
             hitPos.y = hitPos.y * 0.9f;
             hitPos.z = hitPos.z * 0.9f;
 
-            //Translate highlight while it is selected
+            //Draw connection line from selected highlight to the currently focused position
             mh.DrawLine(conObject, hitPos);
         }
 
+        //Check if the L1-Button is pressed
         if (Input.GetButton("L1-Android"))
         {
+            //Check if the raycast hits a highlight
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
+                //Check if a highlight is already selected
                 if (conObject != null)
                 {
+                    //Disconnect the selected highlight from the hit highlight if possible
                     mh.DisconnectItems(conObject);
+
+                    //Reset the selected highlight to null
                     conObject = null;
                 }
+                //Check if no highlight is already selected
                 else if (conObject == null)
                 {
+                    //Select the currently hit highlight
                     conObject = hit.transform.gameObject;
                 }
             }
@@ -236,6 +282,7 @@ public class Control : MonoBehaviour
             {
                 switch (hit.transform.gameObject.name)
                 {
+                    //The dropdown list is selected
                     case "VideoDropdown":
                         //Open the dropdown list
                         list.Show();
@@ -243,20 +290,26 @@ public class Control : MonoBehaviour
                         //Give every Item own box collider
                         for (int i = 1; i < list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.childCount; i++)
                         {
+                            //
                             list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.AddComponent<BoxCollider>();
                             list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.GetComponent<BoxCollider>().size = new Vector3(158, 28, 1);
                         }
 
+                        //Notify that the dropdown list is currently opened
                         opened = true;
                         break;
+                    //The "Play Video" button is pressed
                     case "PlayVideo":
+                        //Toggle the visibility and interaction of the StartMenu
                         ConfigureMenu(stMenu, false);
 
                         //Load save file for currently selected video
                         Load(list.options[list.value].text);
 
-                        //Set the chosen movie in the player and start the playback
+                        //Set the chosen video in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
+
+                        //Start the selected video
                         StartCoroutine(ShowText(mp.StartVideo()));
                         break;
                     default:
@@ -270,6 +323,7 @@ public class Control : MonoBehaviour
                 //Check for all videos if the shown item is part of possible videos
                 foreach (String video in videoList)
                 {
+                    //Check if raycast hits a valid video option
                     if (hit.transform.gameObject.name.Contains(video))
                     {
                         //Get item index from hitted objects name
@@ -281,6 +335,7 @@ public class Control : MonoBehaviour
                         //Hide the dropdown list
                         list.Hide();
 
+                        //Notify that the dropdown list is closed
                         opened = false;
                         break;
                     }
@@ -327,6 +382,7 @@ public class Control : MonoBehaviour
             }
         }
 
+        //Check if a highlight to modify is selected
         if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
             //Translate highlight while it is selected
@@ -337,6 +393,7 @@ public class Control : MonoBehaviour
         //Check if the R2-Button is not pressed anymore
         if (Input.GetButtonUp("R2-Android"))
         {
+            //Check if a highlight to modify is selected
             if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
             {
                 //Get the correct texture coordinates on the video texture
@@ -345,6 +402,7 @@ public class Control : MonoBehaviour
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
+                //Modify all necessary parameters of the selected highlight
                 mh.ModifyItem(modObject, hit.point, mp.GetCurrentPos(), modObject.GetComponent<HighlightMemory>().getType(), coords);
 
                 //Deselect highlight
@@ -352,59 +410,77 @@ public class Control : MonoBehaviour
             }
         }
 
+        //Check if the L"-Button is pressed
         if (Input.GetButton("L2-Android"))
         {
+            //Save the current state of all highlights for the selected video
             Save(mp.GetMovieName());
         }
 
         //Check if the up DPad-Button is pressed
         if (Input.GetAxisRaw("DPad-Vertical-Android") > 0)
         {
+            //Check if the currently playing video is at its end
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
             {
+                //Iterate through the list of all videos
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
                 {
+                    //Check for the currently played video in the list of all videos
                     if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
                     {
+                        //Make the search circular
                         int index = (i + 1) % mp.GetMovieList().Count;
                         if (index < 0)
                         {
                             index += mp.GetMovieList().Count;
                         }
+
+                        //Select the new selected video as ne active video
                         mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
                         break;
                     }
                 }
+                //Start the new video
                 StartCoroutine(ShowText(mp.StartVideo()));
             }
             else
             {
-                mp.JumpToPos((int)mp.GetMovieLength().TotalSeconds - 3);
+                //Jump to the end of the video
+                mp.JumpToPos((int)mp.GetMovieLength().TotalSeconds - 3000);
             }
         }
 
         //Check if the down DPad-Button is pressed
         if (Input.GetAxisRaw("DPad-Vertical-Android") < 0)
         {
+            //Check if the currently playing video is at its beginning
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
+                //Iterate through the list of all videos
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
                 {
+                    //Check for the currently played video in the list of all videos
                     if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
                     {
+                        //Make the search circular
                         int index = (i - 1) % mp.GetMovieList().Count;
                         if (index < 0)
                         {
                             index += mp.GetMovieList().Count;
                         }
+
+                        //Select the new selected video as ne active video
                         mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
                         break;
                     }
                 }
+                //Start the new video
                 StartCoroutine(ShowText(mp.StartVideo()));
             }
             else
             {
+                //Rewind to the start of the video
                 mp.Rewind();
             }
         }
@@ -412,8 +488,9 @@ public class Control : MonoBehaviour
         //Check if the right DPad-Button is pressed
         if (Input.GetAxis("DPad-Horizontal-Android") > 0)
         {
+            //Set the playback speed to double
             mp.SetPlaybackSpeed(1);
-
+        
             StartCoroutine(ShowText("Faster"));
             StartCoroutine(ShowText(mp.TestOutput()));
         }
@@ -421,8 +498,9 @@ public class Control : MonoBehaviour
         //Check if the left DPad-Button is pressed
         if (Input.GetAxis("DPad-Horizontal-Android") < 0)
         {
+            //Set the playback speed to half
             mp.SetPlaybackSpeed(2);
-
+        
             StartCoroutine(ShowText("Slower"));
             StartCoroutine(ShowText(mp.TestOutput()));
         }
@@ -430,12 +508,14 @@ public class Control : MonoBehaviour
         //Check if the vertical DPad-Buttons are not pressed anymore
         if (Input.GetAxis("DPad-Horizontal-Android") == 0)
         {
+            //Set the playback speed to normal
             mp.SetPlaybackSpeed(0);
         }
 #else
+        //
         if (Input.GetButton("A-Windows"))
         {
-            
+
         }
 
         //Check if the B-Button is pressed
@@ -452,60 +532,73 @@ public class Control : MonoBehaviour
             //Check if raycast hits the media sphere
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
+                //Delete selected highlight
                 StartCoroutine(ShowText(mh.DeleteItem(hit.transform.gameObject)));
             }
         }
 
+        //Check if the Y-Button is pressed
         if (Input.GetButton("Y-Windows"))
         {
+            //Check if raycast hitss a highlight
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 String info = "";
 
+                //Add video name, time, texture position and type of the highlight to the info string
                 info += "Video:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getVideo();
                 info += "\nTime:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getTime().ToString();
                 info += "\nTexPos:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getTexPos().ToString();
                 info += "\nType:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getType();
 
+                //Check if selected highlight is connected to a previous highlight
                 if (hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev() != null)
                 {
-                    //info += "\nPrev:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                    //Add "Yes" to the info string
                     info += "\nPrev:\tYes";
                 }
                 else
                 {
-                    info += "\nPrev:\tNo" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                    //Add "No" to the info string
+                    info += "\nPrev:\tNo";
                 }
 
-                if(hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
+                //Check if selected highlight is connected to a next highlight
+                if (hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
                 {
-                    //info += "\nNext:\t" + hit.transform.gameObject.GetComponent<HighlightMemory>().getNext().ToString();
-                    info += "\nPrev:\tYes" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                    //Add "Yes" to the info string
+                    info += "\nPrev:\tYes";
                 }
                 else
                 {
-                    info += "\nPrev:\tNo" + hit.transform.gameObject.GetComponent<HighlightMemory>().getPrev().ToString();
+                    //Add "No" to the info string
+                    info += "\nPrev:\tNo";
                 }
 
+                //Display info string on VRMenu in world space
                 StartCoroutine(ShowText(info));
             }
         }
 
+        //Check if the R1-Button is pressed
         if (Input.GetButtonDown("R1-Windows"))
         {
-            //
+            //Check if raycast hits something
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
-                //
+                //Check if a highlight is already selected to connect and the raycast hits a highlight
                 if (conObject != null && hit.transform.gameObject.name == "Highlight(Clone)")
                 {
+                    //Connect the two highlights if possible
                     mh.ConnectItems(conObject, hit.transform.gameObject);
+
+                    //Reset the selected highlight to null
                     conObject = null;
                 }
-                //
+                //Check if a highlight is already selected to connect and the raycast hits no highlight
                 else if (conObject != null && hit.transform.gameObject.name != "Highlight(Clone)")
                 {
-                    //
+                    //Calculate the hit position for a the new highlight
                     Vector3 hitPos = hit.point - Camera.main.transform.position;
                     hitPos.x = hitPos.x * 0.9f;
                     hitPos.y = hitPos.y * 0.9f;
@@ -517,55 +610,65 @@ public class Control : MonoBehaviour
                     coords.x *= tex.width;
                     coords.y *= tex.height;
 
-                    //
+                    //Draw the connection from the selected highlight to the new highlight
                     mh.DrawLine(conObject, hitPos);
 
-                    //
+                    //Create the new highlight on the hit position
                     StartCoroutine(ShowText(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords, mp.GetMovieName())));
 
-                    //
+                    //Iterate through the list of all highlights
                     foreach (GameObject g in mh.GetList())
                     {
                         //Check for newly created highlight in list of all highlights
                         if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
                         {
-                            //
+                            //Connect the newly created  highlgight to the selected highlight
                             mh.ConnectItems(conObject, g);
                             break;
                         }
                     }
                 }
-                //
-                else
+                //Check if no highlight is already selected and the raycast hits a highlight
+                else if (conObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
                 {
+                    //Select the currently hit highlight
                     conObject = hit.transform.gameObject;
                 }
             }
         }
 
+        //Check if a highlight to connect is selected
         if (conObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
-            //
+            //Calculate the currently focused position
             Vector3 hitPos = hit.point - Camera.main.transform.position;
             hitPos.x = hitPos.x * 0.9f;
             hitPos.y = hitPos.y * 0.9f;
             hitPos.z = hitPos.z * 0.9f;
 
-            //Translate highlight while it is selected
+            //Draw connection line from selected highlight to the currently focused position
             mh.DrawLine(conObject, hitPos);
         }
 
+        //Check if the L1-Button is pressed
         if (Input.GetButton("L1-Windows"))
         {
+            //Check if the raycast hits a highlight
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
+                //Check if a highlight is already selected
                 if (conObject != null)
                 {
+                    //Disconnect the selected highlight from the hit highlight if possible
                     mh.DisconnectItems(conObject);
+
+                    //Reset the selected highlight to null
                     conObject = null;
                 }
+                //Check if no highlight is already selected
                 else if (conObject == null)
                 {
+                    //Select the currently hit highlight
                     conObject = hit.transform.gameObject;
                 }
             }
@@ -579,6 +682,7 @@ public class Control : MonoBehaviour
             {
                 switch (hit.transform.gameObject.name)
                 {
+                    //The dropdown list is selected
                     case "VideoDropdown":
                         //Open the dropdown list
                         list.Show();
@@ -586,20 +690,26 @@ public class Control : MonoBehaviour
                         //Give every Item own box collider
                         for (int i = 1; i < list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.childCount; i++)
                         {
+                            //
                             list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.AddComponent<BoxCollider>();
                             list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.GetComponent<BoxCollider>().size = new Vector3(158, 28, 1);
                         }
 
+                        //Notify that the dropdown list is currently opened
                         opened = true;
                         break;
+                    //The "Play Video" button is pressed
                     case "PlayVideo":
+                        //Toggle the visibility and interaction of the StartMenu
                         ConfigureMenu(stMenu, false);
 
                         //Load save file for currently selected video
                         Load(list.options[list.value].text);
 
-                        //Set the chosen movie in the player and start the playback
+                        //Set the chosen video in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
+
+                        //Start the selected video
                         StartCoroutine(ShowText(mp.StartVideo()));
                         break;
                     default:
@@ -613,6 +723,7 @@ public class Control : MonoBehaviour
                 //Check for all videos if the shown item is part of possible videos
                 foreach (String video in videoList)
                 {
+                    //Check if raycast hits a valid video option
                     if (hit.transform.gameObject.name.Contains(video))
                     {
                         //Get item index from hitted objects name
@@ -624,6 +735,7 @@ public class Control : MonoBehaviour
                         //Hide the dropdown list
                         list.Hide();
 
+                        //Notify that the dropdown list is closed
                         opened = false;
                         break;
                     }
@@ -670,6 +782,7 @@ public class Control : MonoBehaviour
             }
         }
 
+        //Check if a highlight to modify is selected
         if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
             //Translate highlight while it is selected
@@ -680,6 +793,7 @@ public class Control : MonoBehaviour
         //Check if the R2-Button is not pressed anymore
         if (Input.GetButtonUp("R2-Windows"))
         {
+            //Check if a highlight to modify is selected
             if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
             {
                 //Get the correct texture coordinates on the video texture
@@ -688,6 +802,7 @@ public class Control : MonoBehaviour
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
+                //Modify all necessary parameters of the selected highlight
                 mh.ModifyItem(modObject, hit.point, mp.GetCurrentPos(), modObject.GetComponent<HighlightMemory>().getType(), coords);
 
                 //Deselect highlight
@@ -695,33 +810,43 @@ public class Control : MonoBehaviour
             }
         }
 
+        //Check if the L"-Button is pressed
         if (Input.GetButton("L2-Windows"))
         {
+            //Save the current state of all highlights for the selected video
             Save(mp.GetMovieName());
         }
 
         //Check if the up DPad-Button is pressed
         if (Input.GetAxisRaw("DPad-Vertical-Windows") > 0)
         {
+            //Check if the currently playing video is at its end
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
             {
+                //Iterate through the list of all videos
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
                 {
+                    //Check for the currently played video in the list of all videos
                     if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
                     {
+                        //Make the search circular
                         int index = (i + 1) % mp.GetMovieList().Count;
                         if (index < 0)
                         {
                             index += mp.GetMovieList().Count;
                         }
+
+                        //Select the new selected video as ne active video
                         mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
                         break;
                     }
                 }
+                //Start the new video
                 StartCoroutine(ShowText(mp.StartVideo()));
             }
             else
             {
+                //Jump to the end of the video
                 mp.JumpToPos((int)mp.GetMovieLength().TotalSeconds - 3);
             }
         }
@@ -729,25 +854,33 @@ public class Control : MonoBehaviour
         //Check if the down DPad-Button is pressed
         if (Input.GetAxisRaw("DPad-Vertical-Windows") < 0)
         {
+            //Check if the currently playing video is at its beginning
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
+                //Iterate through the list of all videos
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
                 {
+                    //Check for the currently played video in the list of all videos
                     if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
                     {
+                        //Make the search circular
                         int index = (i - 1) % mp.GetMovieList().Count;
                         if (index < 0)
                         {
                             index += mp.GetMovieList().Count;
                         }
+
+                        //Select the new selected video as ne active video
                         mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
                         break;
                     }
                 }
+                //Start the new video
                 StartCoroutine(ShowText(mp.StartVideo()));
             }
             else
             {
+                //Rewind to the start of the video
                 mp.Rewind();
             }
         }
@@ -755,25 +888,36 @@ public class Control : MonoBehaviour
         //Check if the right DPad-Button is pressed
         if (Input.GetAxis("DPad-Horizontal-Windows") > 0)
         {
+            //Set the playback speed to double
             mp.SetPlaybackSpeed(1);
+
+            StartCoroutine(ShowText("Faster"));
+            StartCoroutine(ShowText(mp.TestOutput()));
         }
 
         //Check if the left DPad-Button is pressed
         if (Input.GetAxis("DPad-Horizontal-Windows") < 0)
         {
+            //Set the playback speed to half
             mp.SetPlaybackSpeed(2);
+
+            StartCoroutine(ShowText("Slower"));
+            StartCoroutine(ShowText(mp.TestOutput()));
         }
 
         //Check if the vertical DPad-Buttons are not pressed anymore
         if (Input.GetAxis("DPad-Horizontal-Windows") == 0)
         {
+            //Set the playback speed to normal
             mp.SetPlaybackSpeed(0);
         }
 #endif
     }
 
+    //Save the current state of all highlights of the currently active video
     void Save(String video)
     {
+        //Show the user it started the save process
         StartCoroutine(ShowText(video + " is saving..."));
 
         //Create Formatter and save file path + name
@@ -805,37 +949,48 @@ public class Control : MonoBehaviour
         bf.Serialize(fs, data);
         fs.Close();
 
+        //Show the user it finished the save process
         StartCoroutine(ShowText(video + " is saved"));
     }
 
+    //Load the previously saved highlights for the active video
     void Load(String video)
     {
+        //Determine the location and name of the save file
         String filePath = savePath + video + ".hl";
 
         //Clear old list from highlights
         mh.ClearList();
 
+        //Check if there is already a save file
         if (File.Exists(filePath))
         {
+            //Show the user it started the load process
             StartCoroutine(ShowText(video + " is loading..."));
 
+            //Create Formatter and open file path + name
             BinaryFormatter bf = new BinaryFormatter();
             FileStream fs = File.Open(filePath, FileMode.Open);
 
+            //Deserialize the file and close the filestream
             SaveData data = (SaveData)bf.Deserialize(fs);
             fs.Close();
 
+            //Start the creation of all saved highlights
             CreateHighlights(data, video);
 
+            //Show the user it finished the load process
             StartCoroutine(ShowText(video + " is loaded"));
         }
     }
 
+    //Translates all highlights each to a string from their parameter information
     void CreateIDList(SaveData data)
     {
         localId[] localIdList = new localId[mh.GetList().Count];
         String nextLocalId = "";
 
+        //Iterate through the list of all highlights
         for (int i = 0; i < mh.GetList().Count; i++)
         {
             //Get local parameters of certain highlight
@@ -851,11 +1006,13 @@ public class Control : MonoBehaviour
             localIdList[i] = new localId(mh.GetItem(i), idStr);
         }
 
+        //Iterate through the list of all created ids without the next and previous ids
         for (int i = 0; i < localIdList.Length; i++)
         {
             //Check if the highlight has a next highlight
             if (localIdList[i].g.GetComponent<HighlightMemory>().getNext() != null)
             {
+                //Iterate through the list of all created ids without the next and previous ids
                 foreach (localId li in localIdList)
                 {
                     //Check what localID the next highlight has
@@ -872,6 +1029,7 @@ public class Control : MonoBehaviour
         }
     }
 
+    //Create highlights from a opened save file
     void CreateHighlights(SaveData data, String video)
     {
         List<nextId> nextIdList = new List<nextId>();
@@ -912,13 +1070,14 @@ public class Control : MonoBehaviour
             Vector2 texPos;
             texPos = ParseToVector2(strTexPos);
 
-            //Get the texPos parameter as Vector2
+            //Get the world position parameter as Vector3
             Vector3 pos;
             pos = ParseToVector3(strPos);
 
-            //Get the world position parameter as Vector3
+            //Spawn the higlight from its parameters
             mh.AddItem(pos, time, strType, texPos, video);
 
+            //Add the newly created highlight to the list of possible next highlights
             nextIdList.Add(new nextId(mh.GetItem(i), nextLocalId));
         }
 
@@ -968,6 +1127,7 @@ public class Control : MonoBehaviour
         }
     }
 
+    //Parses a String to a Vector2
     private Vector2 ParseToVector2(String val)
     {
         //Get rid of both brackets
@@ -980,6 +1140,7 @@ public class Control : MonoBehaviour
         return new Vector2(float.Parse(sArray[0]), float.Parse(sArray[1]));
     }
 
+    //Parses a String to a Vector3
     private Vector3 ParseToVector3(String val)
     {
         //Get rid of both brackets
@@ -1001,13 +1162,16 @@ public class Control : MonoBehaviour
         return new Vector3(float.Parse(x), float.Parse(y), float.Parse(z));
     }
 
+    //Toggles the visibility and interaction of a given menu
     private void ConfigureMenu(Canvas menu, bool status)
     {
-        //Enable/Disable every collider this menu has
+        //Iterate through all direct children of the menu
         foreach (Transform child in menu.transform)
         {
+            //Check if the current found child is the DisconnectMenu
             if (child.name != "DisconnectMenu")
             {
+                //Enable/Disable the collider on the buttons of the menu
                 child.GetComponent<Collider>().enabled = status;
             }
         }
@@ -1019,26 +1183,13 @@ public class Control : MonoBehaviour
     //Shows text for certain time in world space
     IEnumerator ShowText(String text)
     {
-#if (UNITY_ANDROID && !UNITY_EDITOR)
+        //Start showing the input text on the VRMenu
         vrMenu.GetComponent<Text>().text = text;
-        yield return new WaitForSecondsRealtime(showTime);
-        vrMenu.GetComponent<Text>().text = "";
-#elif (UNITY_STANDALONE_WIN || UNITY_EDITOR)
-        vrMenu.GetComponent<Text>().text = text;
-        yield return new WaitForSecondsRealtime(showTime);
-        vrMenu.GetComponent<Text>().text = "";
-#endif
-    }
 
-    //Waits for Input from R2
-    IEnumerator WaitForButton()
-    {
-#if (UNITY_ANDROID && !UNITY_EDITOR)
-        while (!Input.GetButtonDown("R2-Android"))
-            yield return null;
-#elif (UNITY_STANDALONE_WIN || UNITY_EDITOR)
-        while (!Input.GetButtonDown("R2-Windows"))
-            yield return null;
-#endif
+        //Wait for a given time (Shows text during this period)
+        yield return new WaitForSecondsRealtime(showTime);
+
+        //Stop showing the input text on the VRMenu
+        vrMenu.GetComponent<Text>().text = "";
     }
 }
