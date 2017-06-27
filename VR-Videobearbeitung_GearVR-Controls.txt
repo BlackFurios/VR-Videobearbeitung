@@ -6,11 +6,12 @@ B:			Pause video
 
 X:			Delete highlight
 
-Y:			-
+Y:			Get highlight information
+			Get currentPos/movieLength
 
-R1:			Connect highlight
+R1:			Connect highlights
 
-L1:			Disconnect highlight
+L1:			Disconnect highlights
 
 R2:			Interact with menu
 			Spawn highlight
