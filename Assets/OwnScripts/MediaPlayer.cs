@@ -324,35 +324,35 @@ public class MediaPlayer : MonoBehaviour
         //Check if video player is there
         if (mediaPlayer != null) 
         {
-            ////Check if the video player is playing and is at the end of the video
-            //if (!videoPaused && GetCurrentPos() == GetMovieLength())
-            //{
-            //    //Iterate through all videos
-            //    for (int i = 0; i < GetMovieList().Count; i++)
-            //    {
-            //        //Check for the current video
-            //        if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
-            //        {
-            //            //Make the array a cycle (0 -> 1 -> 2 -> 0)
-            //            int index = (i + 1) % GetMovieList().Count;
-            //            if (index < 0)
-            //            {
-            //                index += GetMovieList().Count;
-            //            }
+            //Check if the video player is playing and is at the end of the video
+            if (!videoPaused && GetCurrentPos() == GetMovieLength())
+            {
+                //Iterate through all videos
+                for (int i = 0; i < GetMovieList().Count; i++)
+                {
+                    //Check for the current video
+                    if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
+                    {
+                        //Make the array a cycle (0 -> 1 -> 2 -> 0)
+                        int index = (i + 1) % GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += GetMovieList().Count;
+                        }
 
-            //            //Set the next videoas current video
-            //            SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
-            //            break;
-            //        }
-            //    }
-            //    //Start the video player with the new video
-            //    updStr = StartVideo();
+                        //Set the next videoas current video
+                        SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                //Start the video player with the new video
+                updStr = StartVideo();
 
-            //    if(updStr != null)
-            //    {
-            //        Debug.LogError("No valid video found");
-            //    }
-            //}
+                if(updStr != null)
+                {
+                    Debug.LogError("No valid video found");
+                }
+            }
 
             IntPtr currTexId = OVR_Media_Surface_GetNativeTexture();
             if (currTexId != nativeTexId)
@@ -557,7 +557,7 @@ public class MediaPlayer : MonoBehaviour
     }
 
     //Rewind the the currently active video to its beginning
-    public void Rewind()
+    public String Rewind()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         //Check if the android media player is null
@@ -572,6 +572,7 @@ public class MediaPlayer : MonoBehaviour
 			{
 				Debug.Log("Failed to stop mediaPlayer with message " + e.Message);
 			}
+            return "Rewinded video";
         }
 #else
         //Check if the VideoPlayer is null
@@ -586,8 +587,10 @@ public class MediaPlayer : MonoBehaviour
                 //Stops the audio source script
                 audioEmitter.Stop();
             }
+            return "Rewinded video";
         }
 #endif
+        return "No player active";
     }
 
     //Toggles the pause state of the currently active video

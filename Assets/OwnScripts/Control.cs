@@ -167,12 +167,12 @@ public class Control : MonoBehaviour
                 if(hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
                 {
                     //Add "Yes" to the info string
-                    info += "\nPrev:\tYes";
+                    info += "\nNext:\tYes";
                 }
                 else
                 {
                     //Add "No" to the info string
-                    info += "\nPrev:\tNo";
+                    info += "\nNext:\tNo";
                 }
 
                 //Display info string on VRMenu in world space
@@ -227,6 +227,9 @@ public class Control : MonoBehaviour
                             break;
                         }
                     }
+
+                    //Reset the selected highlight to null
+                    conObject = null;
                 }
                 //Check if no highlight is already selected and the raycast hits a highlight
                 else if (conObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
@@ -418,7 +421,7 @@ public class Control : MonoBehaviour
         }
 
         //Check if the up DPad-Button is pressed
-        if (Input.GetAxisRaw("DPad-Vertical-Android") > 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Android") == 1)
         {
             //Check if the currently playing video is at its end
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
@@ -452,10 +455,10 @@ public class Control : MonoBehaviour
         }
 
         //Check if the down DPad-Button is pressed
-        if (Input.GetAxisRaw("DPad-Vertical-Android") < 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Android") == -1)
         {
             //Check if the currently playing video is at its beginning
-            if (mp.GetCurrentPos().TotalSeconds < 5)
+            if (mp.GetCurrentPos().TotalSeconds < 5000)
             {
                 //Iterate through the list of all videos
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
@@ -481,7 +484,7 @@ public class Control : MonoBehaviour
             else
             {
                 //Rewind to the start of the video
-                mp.Rewind();
+                StartCoroutine(ShowText(mp.Rewind()));
             }
         }
 
@@ -567,12 +570,12 @@ public class Control : MonoBehaviour
                 if (hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
                 {
                     //Add "Yes" to the info string
-                    info += "\nPrev:\tYes";
+                    info += "\nNext:\tYes";
                 }
                 else
                 {
                     //Add "No" to the info string
-                    info += "\nPrev:\tNo";
+                    info += "\nNext:\tNo";
                 }
 
                 //Display info string on VRMenu in world space
@@ -627,6 +630,9 @@ public class Control : MonoBehaviour
                             break;
                         }
                     }
+
+                    //Reset the selected highlight to null
+                    conObject = null;
                 }
                 //Check if no highlight is already selected and the raycast hits a highlight
                 else if (conObject == null && hit.transform.gameObject.name == "Highlight(Clone)")
@@ -818,7 +824,7 @@ public class Control : MonoBehaviour
         }
 
         //Check if the up DPad-Button is pressed
-        if (Input.GetAxisRaw("DPad-Vertical-Windows") > 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Windows") == 1)
         {
             //Check if the currently playing video is at its end
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
@@ -852,7 +858,7 @@ public class Control : MonoBehaviour
         }
 
         //Check if the down DPad-Button is pressed
-        if (Input.GetAxisRaw("DPad-Vertical-Windows") < 0)
+        if (Input.GetAxisRaw("DPad-Vertical-Windows") == -1)
         {
             //Check if the currently playing video is at its beginning
             if (mp.GetCurrentPos().TotalSeconds < 5)
@@ -881,7 +887,7 @@ public class Control : MonoBehaviour
             else
             {
                 //Rewind to the start of the video
-                mp.Rewind();
+                StartCoroutine(ShowText(mp.Rewind()));
             }
         }
 

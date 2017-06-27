@@ -255,6 +255,9 @@ public class ManageHighlights : MonoBehaviour
         //Check if highlight has previous highlight
         else if (current.GetComponent<HighlightMemory>().getPrev() != null)
         {
+            //Disable line renderer of selected highlights previous highlight
+            current.GetComponent<HighlightMemory>().getPrev().GetComponent<LineRenderer>().enabled = false;
+
             //Delete highlight as next highlight from previous highlight
             current.GetComponent<HighlightMemory>().getPrev().GetComponent<HighlightMemory>().setNext(null);
         }
