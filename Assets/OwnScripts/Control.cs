@@ -581,6 +581,10 @@ public class Control : MonoBehaviour
                 //Display info string on VRMenu in world space
                 StartCoroutine(ShowText(info));
             }
+            else
+            {
+                StartCoroutine(ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString()));
+            }
         }
 
         //Check if the R1-Button is pressed
