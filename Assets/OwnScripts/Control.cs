@@ -11,6 +11,7 @@ public class Control : MonoBehaviour
 {
     private ManageHighlights mh;                                //Instance of the ManageHighlights script
     private MediaPlayer mp;                                     //Instance of the MediaPlayer script
+    private EDLConverter ec;                                    //Instance of the EDLConverter script
 
     private Dropdown list;                                      //Instance of the dropdown list object
 
@@ -21,6 +22,7 @@ public class Control : MonoBehaviour
     private int layerMask = 1 << 8;                             //LayerMask with layer of the highlights
 
     private GameObject conObject;                               //Highlight which the user is connecting
+    private GameObject disObject;                               //Highlight which the user is disconnecting
     private GameObject modObject;                               //Highlight which the user is modifying
     private int selectedIndex;                                  //Dropdown index which the user has selected
 
@@ -31,6 +33,7 @@ public class Control : MonoBehaviour
     private int showTime = 1;                                   //How long texts should be shown in seconds
 
     private String savePath;                                    //Absolute path of the save files
+    private String edlPath;                                     //Absolute path of the edl file
 
     public class localId                                        //Struct for a highlight and its own local if (without next and prev parameters)
     {
@@ -62,9 +65,11 @@ public class Control : MonoBehaviour
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         //The save path on a android system
         savePath = @"/storage/emulated/0/Movies/VR-Videoschnitt/Saves";
+        edlPath = @"/storage/emulated/0/Movies";
 #else
         //The save path on a windows system
         savePath = @"C:/Users/" + Environment.UserName + "/Documents/VR-Videoschnitt/Saves";
+        edlPath = @"C:/Users/" + Environment.UserName + "/Videos";
 #endif
 
         //Sets the manageHighlights script
@@ -72,6 +77,9 @@ public class Control : MonoBehaviour
 
         //Sets the mediaPlayer script
         mp = GetComponent<MediaPlayer>();
+
+        //Sets the edlConverter script
+        ec = GetComponent<EDLConverter>();
 
         //Invert the layerMask to only ignore the the highlight layer
         layerMask = ~layerMask;
@@ -112,10 +120,11 @@ public class Control : MonoBehaviour
 	void Update ()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        //
+        //Creates the EDL file for the videos (Currently only the active video)
         if (Input.GetButton("A-Android"))
         {
-            
+            mp.TestOutput();
+            //CreateEDL(mp.GetMovieName());
         }
 
         //Check if the B-Button is pressed
@@ -164,7 +173,7 @@ public class Control : MonoBehaviour
                 }
 
                 //Check if selected highlight is connected to a next highlight
-                if(hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
+                if (hit.transform.gameObject.GetComponent<HighlightMemory>().getNext() != null)
                 {
                     //Add "Yes" to the info string
                     info += "\nNext:\tYes";
@@ -178,11 +187,16 @@ public class Control : MonoBehaviour
                 //Display info string on VRMenu in world space
                 StartCoroutine(ShowText(info));
             }
+            else
+            {
+                StartCoroutine(ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString()));
+            }
         }
 
         //Check if the R1-Button is pressed
         if (Input.GetButtonDown("R1-Android"))
         {
+            disObject = null;
             //Check if raycast hits something
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
@@ -256,23 +270,24 @@ public class Control : MonoBehaviour
         //Check if the L1-Button is pressed
         if (Input.GetButton("L1-Android"))
         {
+            conObject = null;
             //Check if the raycast hits a highlight
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 //Check if a highlight is already selected
-                if (conObject != null)
+                if (disObject != null)
                 {
                     //Disconnect the selected highlight from the hit highlight if possible
-                    mh.DisconnectItems(conObject);
+                    mh.DisconnectItems(disObject);
 
                     //Reset the selected highlight to null
-                    conObject = null;
+                    disObject = null;
                 }
                 //Check if no highlight is already selected
-                else if (conObject == null)
+                else if (disObject == null)
                 {
                     //Select the currently hit highlight
-                    conObject = hit.transform.gameObject;
+                    disObject = hit.transform.gameObject;
                 }
             }
         }
@@ -424,7 +439,7 @@ public class Control : MonoBehaviour
         if (Input.GetAxisRaw("DPad-Vertical-Android") == 1)
         {
             //Check if the currently playing video is at its end
-            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
+            if ((mp.GetMovieLength().TotalMilliseconds - mp.GetCurrentPos().TotalMilliseconds) < 5000)
             {
                 //Iterate through the list of all videos
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
@@ -450,7 +465,7 @@ public class Control : MonoBehaviour
             else
             {
                 //Jump to the end of the video
-                mp.JumpToPos((int)mp.GetMovieLength().TotalSeconds - 3000);
+                mp.JumpToPos((int)mp.GetMovieLength().TotalMilliseconds - 3000);
             }
         }
 
@@ -458,7 +473,7 @@ public class Control : MonoBehaviour
         if (Input.GetAxisRaw("DPad-Vertical-Android") == -1)
         {
             //Check if the currently playing video is at its beginning
-            if (mp.GetCurrentPos().TotalSeconds < 5000)
+            if (mp.GetCurrentPos().TotalMilliseconds < 5000)
             {
                 //Iterate through the list of all videos
                 for (int i = 0; i < mp.GetMovieList().Count; i++)
@@ -495,7 +510,6 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(1);
         
             StartCoroutine(ShowText("Faster"));
-            StartCoroutine(ShowText(mp.TestOutput()));
         }
 
         //Check if the left DPad-Button is pressed
@@ -505,7 +519,6 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(2);
         
             StartCoroutine(ShowText("Slower"));
-            StartCoroutine(ShowText(mp.TestOutput()));
         }
 
         //Check if the vertical DPad-Buttons are not pressed anymore
@@ -515,10 +528,10 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(0);
         }
 #else
-        //
+        //Creates the EDL file for the videos (Currently only the active video)
         if (Input.GetButton("A-Windows"))
         {
-
+            CreateEDL(mp.GetMovieName());
         }
 
         //Check if the B-Button is pressed
@@ -590,6 +603,7 @@ public class Control : MonoBehaviour
         //Check if the R1-Button is pressed
         if (Input.GetButtonDown("R1-Windows"))
         {
+            disObject = null;
             //Check if raycast hits something
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
@@ -663,23 +677,24 @@ public class Control : MonoBehaviour
         //Check if the L1-Button is pressed
         if (Input.GetButton("L1-Windows"))
         {
+            conObject = null;
             //Check if the raycast hits a highlight
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 //Check if a highlight is already selected
-                if (conObject != null)
+                if (disObject != null)
                 {
                     //Disconnect the selected highlight from the hit highlight if possible
-                    mh.DisconnectItems(conObject);
+                    mh.DisconnectItems(disObject);
 
                     //Reset the selected highlight to null
-                    conObject = null;
+                    disObject = null;
                 }
                 //Check if no highlight is already selected
-                else if (conObject == null)
+                else if (disObject == null)
                 {
                     //Select the currently hit highlight
-                    conObject = hit.transform.gameObject;
+                    disObject = hit.transform.gameObject;
                 }
             }
         }
@@ -902,7 +917,6 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(1);
 
             StartCoroutine(ShowText("Faster"));
-            StartCoroutine(ShowText(mp.TestOutput()));
         }
 
         //Check if the left DPad-Button is pressed
@@ -912,7 +926,6 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(2);
 
             StartCoroutine(ShowText("Slower"));
-            StartCoroutine(ShowText(mp.TestOutput()));
         }
 
         //Check if the vertical DPad-Buttons are not pressed anymore
@@ -922,6 +935,57 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(0);
         }
 #endif
+    }
+
+    void CreateEDL(String video)
+    {
+        //Show the user it started the converting process
+        StartCoroutine(ShowText("EDL for " + video + " is creating..."));
+
+        //Create edl file path + name
+        String filePath = edlPath + "/" + video + ".edl";
+
+        //Check if directory is not created
+        if (!Directory.Exists(filePath))
+        {
+            //Create the directory
+            Directory.CreateDirectory(filePath);
+        }
+
+        //Check if file is already created
+        if (File.Exists(filePath))
+        {
+            //Clear the file
+            File.WriteAllText(filePath, String.Empty);
+        }
+
+        //Create/Open the edl file
+        StreamWriter sw = new StreamWriter(filePath);
+
+        //Write edl header
+        sw.WriteLine("TITLE: " + video.ToUpper() + "SEQUENCE");
+        sw.WriteLine("FCM: NON-DROP FRAME");
+
+        int clipCnt     = 5;
+        int mode        = 0;                      //0 -> Audio/Video    | 1 -> Video    | 2 -> Audio
+        int trans       = 0;                      //0 -> Cut            | 1 -> Dissolve | 2 -> Wipe
+        TimeSpan srcIN  = TimeSpan.Zero;
+        TimeSpan srcOUT = TimeSpan.Zero;
+        TimeSpan recIN  = TimeSpan.Zero;
+        TimeSpan recOUT = TimeSpan.Zero;
+
+        for (int i = 1; i < clipCnt; i++)
+        {
+            sw.WriteLine(ec.ConvertEdlLine(i,mode ,trans, srcIN, srcOUT, recIN, recOUT));
+            sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
+            sw.WriteLine();
+        }
+
+        //Close the streamwriter
+        sw.Close();
+
+        //Show the user it started the converting process
+        StartCoroutine(ShowText("EDL for " + video + " is created"));
     }
 
     //Save the current state of all highlights of the currently active video

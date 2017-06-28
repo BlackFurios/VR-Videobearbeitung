@@ -26,6 +26,7 @@ using System.Runtime.InteropServices;		//required for DllImport
 using System;								//required for IntPtr
 using System.IO;                            //required for File
 using UnityEngine.Video;                    //required for VideoPlayer
+using UnityEngine.UI;
 
 /************************************************************************************
 Usage:
@@ -67,6 +68,8 @@ Implementation:
 
 public class MediaPlayer : MonoBehaviour
 {
+    private Canvas vrMenu;                                              //Instance of the VRMenu object
+
     private List<videoList>     movieList = new List<videoList>();      //List of all available videos with their paths
 
     private string              movieName = string.Empty;               //Name of the video which is currently played
@@ -145,6 +148,17 @@ public class MediaPlayer : MonoBehaviour
     /// </summary>
     public void Awake()
     {
+        //Search for VRMenu and highlightMenu
+        foreach (Canvas c in FindObjectsOfType<Canvas>())
+        {
+            //Check if the currently found canvas is the VRMenu
+            if (c.name == "VRMenu")
+            {
+                //Sets the VRMenu
+                vrMenu = c;
+            }
+        }
+
         Debug.Log("MovieSample Awake");
 
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -325,7 +339,7 @@ public class MediaPlayer : MonoBehaviour
         if (mediaPlayer != null) 
         {
             //Check if the video player is playing and is at the end of the video
-            if (!videoPaused && GetCurrentPos() == GetMovieLength())
+            if (!videoPaused && GetCurrentPos().TotalMilliseconds == GetMovieLength().TotalMilliseconds - 1000)
             {
                 //Iterate through all videos
                 for (int i = 0; i < GetMovieList().Count; i++)
@@ -368,7 +382,7 @@ public class MediaPlayer : MonoBehaviour
         if (vp != null)
         {
             //Check if the video player is playing and is at the end of the video
-            if (vp.isPlaying && GetCurrentPos() == GetMovieLength())
+            if (vp.isPlaying && GetCurrentPos().TotalSeconds == GetMovieLength().TotalSeconds - 1)
             {
                 //Iterate through all videos
                 for (int i = 0; i < GetMovieList().Count; i++)
@@ -493,13 +507,12 @@ public class MediaPlayer : MonoBehaviour
         return movieList[index].movie;
     }
     
-    public String TestOutput()
+    public void TestOutput()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        float val = playerParams.Call<float>("getSpeed");
-        return val.ToString();
+        StartCoroutine(ShowTextForTest("Params: " + playerParams));
 #else
-        return "";
+
 #endif
     }
 
@@ -520,6 +533,8 @@ public class MediaPlayer : MonoBehaviour
             //Set video playback to fast (mode 1)
             if (mode == 1)
             {
+                StartCoroutine(ShowTextForTest("Fast"));
+
                 playerParams.Call("setSpeed", 2);
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
@@ -527,6 +542,8 @@ public class MediaPlayer : MonoBehaviour
             //Set video playback to slow (mode 2)
             if (mode == 2)
             {
+                StartCoroutine(ShowTextForTest("Slow"));
+
                 playerParams.Call("setSpeed", 0.5f);
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
@@ -702,6 +719,7 @@ public class MediaPlayer : MonoBehaviour
 
 		try
 		{
+            playerParams = mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams");
 			mediaPlayer.Call("setDataSource", mediaPath);
 			mediaPlayer.Call("prepare");
 			mediaPlayer.Call("setLooping", false);
@@ -785,4 +803,17 @@ public class MediaPlayer : MonoBehaviour
 	[DllImport("OculusMediaSurface")]
 	private static extern void OVR_Media_Surface_SetTextureParms(int texWidth, int texHeight);
 #endif
+
+    //Shows text for certain time in world space
+    IEnumerator ShowTextForTest(String text)
+    {
+        //Start showing the input text on the VRMenu
+        vrMenu.GetComponent<Text>().text = text;
+
+        //Wait for a given time (Shows text during this period)
+        yield return new WaitForSecondsRealtime(1);
+
+        //Stop showing the input text on the VRMenu
+        vrMenu.GetComponent<Text>().text = "";
+    }
 }
