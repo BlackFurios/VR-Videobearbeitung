@@ -32,6 +32,8 @@ public class Control : MonoBehaviour
     private bool pausing = false;                               //Is the video currently paused
     private int showTime = 1;                                   //How long texts should be shown in seconds
 
+    private int hlRange = 5;                                    //From when to when will a single highlight be calculated in the edl (radius)
+
     private String savePath;                                    //Absolute path of the save files
     private String edlPath;                                     //Absolute path of the edl file
 
@@ -123,8 +125,7 @@ public class Control : MonoBehaviour
         //Creates the EDL file for the videos (Currently only the active video)
         if (Input.GetButton("A-Android"))
         {
-            mp.TestOutput();
-            //CreateEDL(mp.GetMovieName());
+            CreateEDL(mp.GetMovieName());
         }
 
         //Check if the B-Button is pressed
@@ -966,19 +967,152 @@ public class Control : MonoBehaviour
         sw.WriteLine("TITLE: " + video.ToUpper() + "SEQUENCE");
         sw.WriteLine("FCM: NON-DROP FRAME");
 
-        int clipCnt     = 5;
-        int mode        = 0;                      //0 -> Audio/Video    | 1 -> Video    | 2 -> Audio
-        int trans       = 0;                      //0 -> Cut            | 1 -> Dissolve | 2 -> Wipe
-        TimeSpan srcIN  = TimeSpan.Zero;
-        TimeSpan srcOUT = TimeSpan.Zero;
-        TimeSpan recIN  = TimeSpan.Zero;
-        TimeSpan recOUT = TimeSpan.Zero;
+        int mode = 0;   //0 -> Audio/Video    | 1 -> Video    | 2 -> Audio
 
-        for (int i = 1; i < clipCnt; i++)
+        TimeSpan prevTime = TimeSpan.Zero;
+
+        //List of all already in the edit decision list used highlights
+        List<GameObject> usedHl = new List<GameObject>();
+
+        //Variables of the current highlight and the last highlight of the possible chain
+        GameObject highlight = null;
+        GameObject last = null;
+
+        //Variables of the beginning and the end of the highlight in the source (the video)
+        TimeSpan srcIN;
+        TimeSpan srcOUT;
+
+        //Variables of the beginning and the end of the highlight in the record (the edit decision list)
+        TimeSpan recIN;
+        TimeSpan recOUT;
+
+        //Iterate through all highlights
+        for (int lineCnt = 1; lineCnt <= mh.GetList().Count; lineCnt++)
         {
-            sw.WriteLine(ec.ConvertEdlLine(i,mode ,trans, srcIN, srcOUT, recIN, recOUT));
-            sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
-            sw.WriteLine();
+            //Set highlight variable
+            highlight = mh.GetItem(lineCnt - 1);
+
+            //Set transition variable
+            int trans = GetTransitionNumber(highlight);
+
+            //Check if there are already highlights which are in previous line in the edit decision list
+            if (usedHl.Count != 0)
+            {
+                //Check if highlight has no next highlight
+                if (highlight.GetComponent<HighlightMemory>().getNext() == null)
+                {
+                    //Set the srcIN 5 seconds before first chain highlight and srcOUT 5 seconds after last chain highlight
+                    srcIN = highlight.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(hlRange));
+                    srcOUT = highlight.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(hlRange));
+
+                    //Set the time interval of the single/chain highlight
+                    TimeSpan interval = srcOUT.Subtract(srcIN);
+
+                    //Set recIN at the previous time and recOUT at the previous time combined with the interval
+                    recIN = prevTime;
+                    recOUT = prevTime.Add(interval);
+
+                    //Set the previous time variable to the last time record output
+                    prevTime = recOUT;
+                }
+                //Check if highlight has a next highlight
+                else
+                {
+                    //Set the last variable (recursiv)
+                    last = GetLastChainItem(highlight.GetComponent<HighlightMemory>().getNext());
+
+                    //Set the srcIN 5 seconds before first chain highlight and srcOUT 5 seconds after last chain highlight
+                    srcIN = highlight.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(hlRange));
+                    srcOUT = last.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(hlRange));
+
+                    //Set the ignore variable
+                    bool ignore = false;
+
+                    //Iterate through all already in the edl creation used highlights
+                    foreach (GameObject g in usedHl)
+                    {
+                        //Check if the last variable is already part of the already used highlights
+                        if (last == g)
+                        {
+                            ignore = true;
+                            break;
+                        }
+                    }
+
+                    //Check if this highlight needs to be ignored
+                    if (ignore)
+                    {
+                        //Set both recIN and recOUT to zero to show that this highlight needs to be ignored
+                        recIN = TimeSpan.Zero;
+                        recOUT = TimeSpan.Zero;
+                    }
+                    //Check if this highlight needs to be considered
+                    else
+                    {
+                        //Set the time interval of the single/chain highlight
+                        TimeSpan interval = srcOUT.Subtract(srcIN);
+
+                        //Set recIN at the previous time and recOUT at the previous time combined with the interval
+                        recIN = prevTime;
+                        recOUT = prevTime.Add(interval);
+
+                        //Set the previous time variable to the last time record output
+                        prevTime = recOUT;
+                    }
+                }
+            }
+            //Check if no highlights are already used
+            else
+            {
+                //Check if highlight has no next highlight
+                if (highlight.GetComponent<HighlightMemory>().getNext() == null)
+                {
+                    //Set the srcIN 5 seconds before first chain highlight and srcOUT 5 seconds after last chain highlight
+                    srcIN = highlight.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(hlRange));
+                    srcOUT = highlight.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(hlRange));
+
+                    //Set the time interval of the single/chain highlight
+                    TimeSpan interval = srcOUT.Subtract(srcIN);
+
+                    //Set recIN at the previous time and recOUT at the previous time combined with the interval
+                    recIN = prevTime;
+                    recOUT = prevTime.Add(interval);
+
+                    //Set the previous time variable to the last time record output
+                    prevTime = recOUT;
+                }
+                //Check if highlight has a next highlight
+                else
+                {
+                    //Set the last variable (recursiv)
+                    last = GetLastChainItem(highlight.GetComponent<HighlightMemory>().getNext());
+
+                    //Set srcIN 5 seconds before first chain highlight and srcOUT 5 seconds after last chain highlight
+                    srcIN = highlight.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(hlRange));
+                    srcOUT = last.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(hlRange));
+
+                    //Set recIN at the beginning and recOUT at srcOUT
+                    recIN = TimeSpan.Zero;
+                    recOUT = srcOUT;
+
+                    //Set the previous time variable to the last time record output
+                    prevTime = recOUT;
+                }
+            }
+
+            //Check if both recIN and recOUT are zero (no time interval present)
+            if (recIN == TimeSpan.Zero && recOUT == TimeSpan.Zero)
+            {
+                Debug.Log("This highlight is already used in the edl");
+            }
+            //Check if there is an time interval
+            else
+            {
+                //Convert the given parameters to a complete edl line
+                sw.WriteLine(ec.ConvertEdlLine(lineCnt, mode, trans, srcIN, srcOUT, recIN, recOUT));
+                sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
+                sw.WriteLine();
+            }
         }
 
         //Close the streamwriter
@@ -986,6 +1120,50 @@ public class Control : MonoBehaviour
 
         //Show the user it started the converting process
         StartCoroutine(ShowText("EDL for " + video + " is created"));
+    }
+
+    int GetTransitionNumber(GameObject highlight)
+    {
+        int trans;
+
+        //Define the type of highlight for the edl (3 types possible)
+        switch (highlight.GetComponent<HighlightMemory>().getType())
+        {
+            //2 -> Wipe
+            case "Wipe":
+                trans = 2;
+                break;
+            //1 -> Dissolve
+            case "Dissolve":
+                trans = 1;
+                break;
+            //0 -> Cut
+            default:
+                trans = 0;
+                break;
+        }
+        
+        return trans;
+    }
+
+    GameObject GetLastChainItem (GameObject g)
+    {
+        GameObject output = null;
+
+        //Check if this highlight has a next highlight
+        if (g.GetComponent<HighlightMemory>().getNext() != null)
+        {
+            //Start GetLastChainItem again with the next highlight (recursive)
+            output = GetLastChainItem (g.GetComponent<HighlightMemory>().getNext());
+        }
+        //Check if this highlight has no next highlight
+        else
+        {
+            //Set this highlight as the output highlight
+            output = g;
+        }
+
+        return output;
     }
 
     //Save the current state of all highlights of the currently active video
