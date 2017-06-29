@@ -301,7 +301,7 @@ public class MediaPlayer : MonoBehaviour
             startedVideo = true;
 #if (UNITY_ANDROID && !UNITY_EDITOR)
             //Create the playerParams class to manage the playback of the android media player
-            playerParams = CreatePlayerParams();
+            //playerParams = CreatePlayerParams();
 
             //Create the android media player and set the texture to display the video
 			mediaPlayer = StartVideoPlayerOnTextureId(textureWidth, textureHeight, mediaFullPath);
@@ -322,6 +322,7 @@ public class MediaPlayer : MonoBehaviour
 			mediaPlayer.Call("prepare");
 			mediaPlayer.Call("setLooping", false);
 			mediaPlayer.Call("start");
+            playerParams = CreatePlayerParams(mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams"));
 		}
 		catch (Exception e)
 		{
@@ -526,7 +527,7 @@ public class MediaPlayer : MonoBehaviour
             //Set video playback to normal (mode 0)
             if (mode == 0)
             {
-                playerParams.Call("setSpeed", 1);
+                playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 1f);
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
 
@@ -535,7 +536,7 @@ public class MediaPlayer : MonoBehaviour
             {
                 StartCoroutine(ShowTextForTest("Fast"));
 
-                playerParams.Call("setSpeed", 2);
+                playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 2f);
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
 
@@ -544,7 +545,7 @@ public class MediaPlayer : MonoBehaviour
             {
                 StartCoroutine(ShowTextForTest("Slow"));
 
-                playerParams.Call("setSpeed", 0.5f);
+                playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 0.5f);
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
         }
@@ -719,11 +720,11 @@ public class MediaPlayer : MonoBehaviour
 
 		try
 		{
-            playerParams = mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams");
 			mediaPlayer.Call("setDataSource", mediaPath);
 			mediaPlayer.Call("prepare");
 			mediaPlayer.Call("setLooping", false);
 			mediaPlayer.Call("start");
+            playerParams = CreatePlayerParams(mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams"));
 
             Debug.Log("Started mediaPlayer successfully");
 		}
@@ -738,21 +739,31 @@ public class MediaPlayer : MonoBehaviour
     /// <summary>
 	/// Set up the video player parameters.
 	/// </summary>
-    AndroidJavaObject CreatePlayerParams()
+    AndroidJavaObject CreatePlayerParams(AndroidJavaObject inputObject)
 	{
-		AndroidJavaObject playerParams = new AndroidJavaObject("android/media/PlaybackParams");
+        AndroidJavaObject playbackParams = null;
 
-        IntPtr getSpeedMethodId = AndroidJNI.GetMethodID(playerParams.GetRawClass(),"getSpeed","()F");
+        if (inputObject == null)
+        {
+            //playbackParams = new AndroidJavaObject("android/media/PlaybackParams");
+            Debug.LogError("No PlaybackParams in mediaPlayer found");
+        }
+        else
+        {
+            playbackParams = inputObject;
+        }
+
+        IntPtr getSpeedMethodId = AndroidJNI.GetMethodID(playbackParams.GetRawClass(),"getSpeed","()F");
         jvalue[] parms = new jvalue[1];
         parms[0] = new jvalue();
         parms[0].f = 1f;
-        AndroidJNI.CallFloatMethod(playerParams.GetRawObject(), getSpeedMethodId, parms);
+        AndroidJNI.CallFloatMethod(playbackParams.GetRawObject(), getSpeedMethodId, parms);
 
 		try
 		{
-            playerParams = playerParams.Call<AndroidJavaObject>("setAudioFallbackMode", 0);
-			playerParams = playerParams.Call<AndroidJavaObject>("setPitch", 1);
-			playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 1);
+            playbackParams = playbackParams.Call<AndroidJavaObject>("setAudioFallbackMode", 0);
+			playbackParams = playbackParams.Call<AndroidJavaObject>("setPitch", 1f);
+			playbackParams = playbackParams.Call<AndroidJavaObject>("setSpeed", 1f);
 
             Debug.Log("Started playerParams successfully");
 		}
@@ -761,7 +772,7 @@ public class MediaPlayer : MonoBehaviour
 			Debug.Log("Failed to create playerParams with message " + e.Message);
 		}
 
-		return playerParams;
+		return playbackParams;
 	}
 
     //class MediaPlayerEndListener : AndroidJavaProxy
