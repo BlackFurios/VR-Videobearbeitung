@@ -5,13 +5,10 @@ using UnityEngine;
 
 public class EDLConverter : MonoBehaviour
 {
-    private ManageHighlights mh;                                //Instance of the ManageHighlights script
-
     // Use this for initialization
     void Start ()
     {
-        //Sets the manageHighlights script
-        mh = GetComponent<ManageHighlights>();
+
     }
 	
 	// Update is called once per frame
