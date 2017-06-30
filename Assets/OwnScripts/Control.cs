@@ -140,7 +140,8 @@ public class Control : MonoBehaviour
         if (Input.GetButton("X-Android"))
         {
             //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 //Delete selected highlight
                 StartCoroutine(ShowText(mh.DeleteItem(hit.transform.gameObject)));
@@ -151,7 +152,8 @@ public class Control : MonoBehaviour
         if (Input.GetButton("Y-Android"))
         {
             //Check if raycast hitss a highlight
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 String info = "";
 
@@ -235,7 +237,8 @@ public class Control : MonoBehaviour
                     foreach (GameObject g in mh.GetList())
                     {
                         //Check for newly created highlight in list of all highlights
-                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
+                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && 
+                            g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
                         {
                             //Connect the newly created  highlgight to the selected highlight
                             mh.ConnectItems(conObject, g);
@@ -256,7 +259,8 @@ public class Control : MonoBehaviour
         }
 
         //Check if a highlight to connect is selected
-        if (conObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
+        if (conObject != null && 
+            Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
             //Calculate the currently focused position
             Vector3 hitPos = hit.point - Camera.main.transform.position;
@@ -273,7 +277,8 @@ public class Control : MonoBehaviour
         {
             conObject = null;
             //Check if the raycast hits a highlight
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 //Check if a highlight is already selected
                 if (disObject != null)
@@ -297,7 +302,8 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("R2-Android"))
         {
             // Check if the StartMenu is enabled and the dropdown list is closed
-            if (stMenu.enabled == true && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (stMenu.enabled == true && opened == false && 
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 switch (hit.transform.gameObject.name)
                 {
@@ -337,7 +343,8 @@ public class Control : MonoBehaviour
             }
 
             //Check if the StartMenu is enabled and the dropdown list is opened
-            if (stMenu.enabled == true && opened == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (stMenu.enabled == true && opened == true && 
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check for all videos if the shown item is part of possible videos
                 foreach (String video in videoList)
@@ -365,7 +372,8 @@ public class Control : MonoBehaviour
             }
 
             //Check if raycast hits the media sphere
-            if (stMenu.enabled == false && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (stMenu.enabled == false && opened == false && 
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check if highlight was already spawned and needs to be manipulated
                 if (modObject == null && hit.transform.gameObject.name != "Highlight(Clone)")
@@ -383,7 +391,8 @@ public class Control : MonoBehaviour
                     foreach (GameObject g in mh.GetList())
                     {
                         //Check for newly created highlight in list of all highlights
-                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
+                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && 
+                            g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
                         {
                             //Make the newly created highlight the modObject
                             modObject = g;
@@ -402,7 +411,8 @@ public class Control : MonoBehaviour
         }
 
         //Check if a highlight to modify is selected
-        if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
+        if (modObject != null && 
+            Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
             //Translate highlight while it is selected
             modObject.GetComponent<HighlightMemory>().setTime(mp.GetCurrentPos());
@@ -413,7 +423,8 @@ public class Control : MonoBehaviour
         if (Input.GetButtonUp("R2-Android"))
         {
             //Check if a highlight to modify is selected
-            if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
+            if (modObject != null && 
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -547,7 +558,8 @@ public class Control : MonoBehaviour
         if (Input.GetButton("X-Windows"))
         {
             //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 //Delete selected highlight
                 StartCoroutine(ShowText(mh.DeleteItem(hit.transform.gameObject)));
@@ -558,7 +570,8 @@ public class Control : MonoBehaviour
         if (Input.GetButton("Y-Windows"))
         {
             //Check if raycast hitss a highlight
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 String info = "";
 
@@ -642,7 +655,8 @@ public class Control : MonoBehaviour
                     foreach (GameObject g in mh.GetList())
                     {
                         //Check for newly created highlight in list of all highlights
-                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
+                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && 
+                            g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
                         {
                             //Connect the newly created  highlgight to the selected highlight
                             mh.ConnectItems(conObject, g);
@@ -663,7 +677,8 @@ public class Control : MonoBehaviour
         }
 
         //Check if a highlight to connect is selected
-        if (conObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
+        if (conObject != null && 
+            Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
             //Calculate the currently focused position
             Vector3 hitPos = hit.point - Camera.main.transform.position;
@@ -680,7 +695,8 @@ public class Control : MonoBehaviour
         {
             conObject = null;
             //Check if the raycast hits a highlight
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name == "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 //Check if a highlight is already selected
                 if (disObject != null)
@@ -704,7 +720,8 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("R2-Windows"))
         {
             // Check if the StartMenu is enabled and the dropdown list is closed
-            if (stMenu.enabled == true && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (stMenu.enabled == true && opened == false && 
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 switch (hit.transform.gameObject.name)
                 {
@@ -744,7 +761,8 @@ public class Control : MonoBehaviour
             }
 
             //Check if the StartMenu is enabled and the dropdown list is opened
-            if (stMenu.enabled == true && opened == true && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (stMenu.enabled == true && opened == true && 
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check for all videos if the shown item is part of possible videos
                 foreach (String video in videoList)
@@ -772,7 +790,8 @@ public class Control : MonoBehaviour
             }
 
             //Check if raycast hits the media sphere
-            if (stMenu.enabled == false && opened == false && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            if (stMenu.enabled == false && opened == false && 
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check if highlight was already spawned and needs to be manipulated
                 if (modObject == null && hit.transform.gameObject.name != "Highlight(Clone)")
@@ -790,7 +809,8 @@ public class Control : MonoBehaviour
                     foreach (GameObject g in mh.GetList())
                     {
                         //Check for newly created highlight in list of all highlights
-                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
+                        if (g.GetComponent<HighlightMemory>().getTexPos() == coords && 
+                            g.GetComponent<HighlightMemory>().getTime() == mp.GetCurrentPos())
                         {
                             //Make the newly created highlight the modObject
                             modObject = g;
@@ -809,7 +829,8 @@ public class Control : MonoBehaviour
         }
 
         //Check if a highlight to modify is selected
-        if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
+        if (modObject != null && 
+            Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
         {
             //Translate highlight while it is selected
             modObject.GetComponent<HighlightMemory>().setTime(mp.GetCurrentPos());
@@ -820,7 +841,8 @@ public class Control : MonoBehaviour
         if (Input.GetButtonUp("R2-Windows"))
         {
             //Check if a highlight to modify is selected
-            if (modObject != null && Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
+            if (modObject != null && 
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, Mathf.Infinity, layerMask))
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
