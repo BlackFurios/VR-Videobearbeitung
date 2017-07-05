@@ -32,6 +32,8 @@ public class Control : MonoBehaviour
     private bool pausing = false;                               //Is the video currently paused
     private int showTime = 1;                                   //How long texts should be shown in seconds
 
+    private float timer;                                        //Timer for long button press
+
     private int hlRange = 5;                                    //From when to when will a single highlight be calculated in the edl (radius)
 
     private String savePath;                                    //Absolute path of the save files
@@ -131,6 +133,7 @@ public class Control : MonoBehaviour
         //Check if the B-Button is pressed
         if (Input.GetButton("B-Android"))
         {
+            StartCoroutine(ShowText("Pausing/Unpausing"));
             //Pauses current video
             pausing = !pausing;
             mp.SetPaused(pausing);
@@ -557,13 +560,28 @@ public class Control : MonoBehaviour
         //Check if the X-Button is pressed
         if (Input.GetButton("X-Windows"))
         {
-            //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
-                hit.transform.gameObject.name == "Highlight(Clone)")
+            //Check if the button is shorter than 3 seconds pressed
+            if ((Time.time - timer) < 3)
             {
-                //Delete selected highlight
-                StartCoroutine(ShowText(mh.DeleteItem(hit.transform.gameObject)));
+                //Check if raycast hits the media sphere
+                if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) &&
+                    hit.transform.gameObject.name == "Highlight(Clone)")
+                {
+                    //Delete selected highlight
+                    StartCoroutine(ShowText(mh.DeleteItem(hit.transform.gameObject)));
+                }
+
+                //Set timer variable to current time
+                timer = Time.time;
             }
+            else
+            {
+                //Clear complete highlight list and delete all highlights at once
+                mh.ClearList();
+
+                //Set timer variable to current time
+                timer = Time.time;
+            }  
         }
 
         //Check if the Y-Button is pressed
@@ -969,10 +987,10 @@ public class Control : MonoBehaviour
         String filePath = edlPath + "/" + video + ".edl";
 
         //Check if directory is not created
-        if (!Directory.Exists(filePath))
+        if (!Directory.Exists(edlPath))
         {
             //Create the directory
-            Directory.CreateDirectory(filePath);
+            Directory.CreateDirectory(edlPath);
         }
 
         //Check if file is already created
@@ -1041,7 +1059,7 @@ public class Control : MonoBehaviour
                 else
                 {
                     //Set the last variable (recursiv)
-                    last = GetLastChainItem(highlight.GetComponent<HighlightMemory>().getNext());
+                    last = mh.GetLastChainItem(highlight.GetComponent<HighlightMemory>().getNext());
 
                     //Set the srcIN 5 seconds before first chain highlight and srcOUT 5 seconds after last chain highlight
                     srcIN = highlight.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(hlRange));
@@ -1107,8 +1125,8 @@ public class Control : MonoBehaviour
                 else
                 {
                     //Set the last variable (recursiv)
-                    last = GetLastChainItem(highlight.GetComponent<HighlightMemory>().getNext());
-
+                    last = mh.GetLastChainItem(highlight.GetComponent<HighlightMemory>().getNext());
+                    
                     //Set srcIN 5 seconds before first chain highlight and srcOUT 5 seconds after last chain highlight
                     srcIN = highlight.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(hlRange));
                     srcOUT = last.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(hlRange));
@@ -1166,26 +1184,6 @@ public class Control : MonoBehaviour
         }
         
         return trans;
-    }
-
-    GameObject GetLastChainItem (GameObject g)
-    {
-        GameObject output = null;
-
-        //Check if this highlight has a next highlight
-        if (g.GetComponent<HighlightMemory>().getNext() != null)
-        {
-            //Start GetLastChainItem again with the next highlight (recursive)
-            output = GetLastChainItem (g.GetComponent<HighlightMemory>().getNext());
-        }
-        //Check if this highlight has no next highlight
-        else
-        {
-            //Set this highlight as the output highlight
-            output = g;
-        }
-
-        return output;
     }
 
     //Save the current state of all highlights of the currently active video

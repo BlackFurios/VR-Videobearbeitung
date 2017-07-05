@@ -25,10 +25,11 @@ public class ManageHighlights : MonoBehaviour
 	void Update ()
     {
         //Iterate through the list of all highlights
-		foreach(GameObject g in hList)
+        foreach (GameObject g in hList)
         {
             //Check if this highlight has to be shown now
-            if (mp.GetCurrentPos().TotalSeconds > g.GetComponent<HighlightMemory>().getTime().TotalSeconds - timeRange && mp.GetCurrentPos().TotalSeconds < g.GetComponent<HighlightMemory>().getTime().TotalSeconds + timeRange)
+            if (mp.GetCurrentPos().TotalSeconds > g.GetComponent<HighlightMemory>().getTime().TotalSeconds - timeRange &&
+                mp.GetCurrentPos().TotalSeconds < g.GetComponent<HighlightMemory>().getTime().TotalSeconds + timeRange)
             {
                 //Show this highlight
                 g.GetComponent<Renderer>().enabled = true;
@@ -36,39 +37,52 @@ public class ManageHighlights : MonoBehaviour
             }
             else
             {
-                //Check if the next or previous chain highlight of this highlight is shown if it has one
-                if (g.GetComponent<HighlightMemory>().getNext() != null || g.GetComponent<HighlightMemory>().getPrev() != null)
-                {
-                    //Check if the selected highlights next or previous highlight is visible
-                    if (g.GetComponent<HighlightMemory>().getNext().GetComponent<Renderer>().enabled == true || g.GetComponent<HighlightMemory>().getPrev().GetComponent<Renderer>().enabled == true)
-                    {
-                        //Show this highlight
-                        g.GetComponent<Renderer>().enabled = true;
-                        g.GetComponent<MeshCollider>().enabled = true;
+                //Show this highlight
+                g.GetComponent<Renderer>().enabled = false;
+                g.GetComponent<MeshCollider>().enabled = false;
+            }
+        }
 
-                        //Check if the selected highlights next highlight is not null
-                        if (g.GetComponent<HighlightMemory>().getNext() != null)
-                        {
-                            //Draw a line from this highlight to its next highlight to show connection in world space
-                            DrawLine(g, g.GetComponent<HighlightMemory>().getNext().transform.position);
-                        }
-                    }
-                    else
-                    {
-                        //Do not show this highlight anymore
-                        g.GetComponent<Renderer>().enabled = false;
-                        g.GetComponent<MeshCollider>().enabled = false;
-                    }
-                }
-                else
+        //Iterate through the list of all highlights
+        foreach (GameObject g in hList)
+        {
+            //
+            if (g.GetComponent<HighlightMemory>().getPrev() != null && g.GetComponent<HighlightMemory>().getPrev().GetComponent<Renderer>().enabled)
+            {
+                //Show this highlight
+                g.GetComponent<Renderer>().enabled = true;
+                g.GetComponent<MeshCollider>().enabled = true;
+
+                if (!g.GetComponent<HighlightMemory>().getPrev().GetComponent<Renderer>().enabled)
                 {
-                    //Do not show this highlight anymore
+                    DrawLine(g.GetComponent<HighlightMemory>().getPrev(), g.transform.position);
+                }
+            }
+            //
+            else if (g.GetComponent<HighlightMemory>().getNext() != null && g.GetComponent<HighlightMemory>().getNext().GetComponent<Renderer>().enabled)
+            {
+                //Show this highlight
+                g.GetComponent<Renderer>().enabled = true;
+                g.GetComponent<MeshCollider>().enabled = true;
+
+                if (!g.GetComponent<Renderer>().enabled)
+                {
+                    DrawLine(g, g.GetComponent<HighlightMemory>().getNext().transform.position);
+                }
+            }
+            else
+            {
+                //Show this highlight
+                g.GetComponent<Renderer>().enabled = false;
+                g.GetComponent<MeshCollider>().enabled = false;
+
+                if (g.GetComponent<Renderer>().enabled)
+                {
                     g.GetComponent<Renderer>().enabled = false;
-                    g.GetComponent<MeshCollider>().enabled = false;
                 }
             }
         }
-	}
+    }
 
     //Spawns highlight with if no oher highlight collides with it
     GameObject SpawnHighlight(Vector3 pos, GameObject other)
@@ -117,6 +131,26 @@ public class ManageHighlights : MonoBehaviour
     public List<GameObject> GetList()
     {
         return hList;
+    }
+
+    public GameObject GetLastChainItem(GameObject g)
+    {
+        GameObject output = null;
+
+        //Check if this highlight has a next highlight
+        if (g.GetComponent<HighlightMemory>().getNext() != null)
+        {
+            //Start GetLastChainItem again with the next highlight (recursive)
+            output = GetLastChainItem(g.GetComponent<HighlightMemory>().getNext());
+        }
+        //Check if this highlight has no next highlight
+        else
+        {
+            //Set this highlight as the output highlight
+            output = g;
+        }
+
+        return output;
     }
 
     //Public function to create and add new highlight to video

@@ -17,6 +17,7 @@ public class EDLConverter : MonoBehaviour
 		
 	}
 
+    //Converts given parameters into a String which resembles a line of a edit decision list
     public String ConvertEdlLine(int lineCnt, int mode, int trans, TimeSpan srcIN, TimeSpan srcOUT, TimeSpan recIN, TimeSpan recOUT)
     {
         String str = "";
