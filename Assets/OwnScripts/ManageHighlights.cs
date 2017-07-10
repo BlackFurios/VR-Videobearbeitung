@@ -10,8 +10,7 @@ public class ManageHighlights : MonoBehaviour
 
     private List<GameObject>    hList = new List<GameObject>();     //List of all managed highlights
     public GameObject           highLight;                          //Highlight prefab to be managed
-
-    private float               range = 3;                          //Range in which no other highlight should be spawned
+    
     private float               timeRange = 0.5f;                   //The time range in which this highlight should be shown in the UI (x2 in video)
 
     //Use this for initialization
@@ -45,53 +44,22 @@ public class ManageHighlights : MonoBehaviour
     }
 
     //Public function to create and add new highlight to video
-    public String AddItem(Vector3 pos, TimeSpan ts, String type, Vector2 texPos)
+    public void AddItem(Vector3 pos, TimeSpan ts, String type, Vector2 texPos)
     {
-        GameObject current = null;
+        //Set current to the newly spawned highlight object
+        GameObject current = SpawnHighlight(pos);
 
-        //Check if this highlight is the first one to be created
-        if (hList.Count != 0)
-        {
-            //Iterate through the list of all highlights
-            foreach (GameObject g in hList)
-            {
-                //Check if spawning this highlight is possible
-                current = SpawnHighlight(pos, g);
+        //Add new highlight to list of managed highlights
+        hList.Add(current);
 
-                //Check if the current is null (SpawnHighlight() has an invalid output)
-                if (current == null)
-                {
-                    break;
-                }
-            }
-        }
-        else
-        {
-            //Spawn highlight at position spawnPos and with rotation spawnRot
-            current = SpawnHighlight(pos, null);
-        }
-
-        //Check if SpawnHighlight detected an already existing highlight
-        if (current != null)
-        {
-            //Add new highlight to list of managed highlights
-            hList.Add(current);
-
-            //Add parameters of new highlight
-            current.GetComponent<HighlightMemory>().setTime(ts);
-            current.GetComponent<HighlightMemory>().setType(type);
-            current.GetComponent<HighlightMemory>().setTexPos(texPos);
-
-            return "Highlight successfully created";
-        }
-        else
-        {
-            return "Highlight could not be created";
-        }
+        //Add parameters of new highlight
+        current.GetComponent<HighlightMemory>().setTime(ts);
+        current.GetComponent<HighlightMemory>().setType(type);
+        current.GetComponent<HighlightMemory>().setTexPos(texPos);
     }
 
     //Spawns highlight with if no oher highlight collides with it
-    GameObject SpawnHighlight(Vector3 pos, GameObject other)
+    GameObject SpawnHighlight(Vector3 pos)
     {
         //Calculate the position of this highlight
         Vector3 spawnPos = pos - Camera.main.transform.position;
@@ -105,26 +73,8 @@ public class ManageHighlights : MonoBehaviour
         eulRot.x = eulRot.x + 90;
         spawnRot.eulerAngles = eulRot;
 
-        //Check if the other variable is not null
-        if(other != null)
-        {
-            //Check for every existing highlight if it is colliding with the one to be created
-            if (Vector3.Distance(other.transform.position, spawnPos) <= range && other.GetComponent<Renderer>().enabled == true)
-            {
-                // Returns error object (null) for AddItem() to handle
-                return null;
-            }
-            else
-            {
-                //Spawn highlight at position spawnPos and with rotation spawnRot
-                return Instantiate(highLight, spawnPos, spawnRot);
-            }
-        }
-        else
-        {
-            //Spawn highlight at position spawnPos and with rotation spawnRot
-            return Instantiate(highLight, spawnPos, spawnRot);
-        }
+        //Spawn the highlight
+        return Instantiate(highLight, spawnPos, spawnRot);
     }
 
     //Returns the item from highlight list
@@ -142,13 +92,14 @@ public class ManageHighlights : MonoBehaviour
     //Empties the list of all highlights and destroys all highlight gameObjects
     public void ClearList()
     {
+        //Check if highlights were already spawned
         if (GetList().Count != 0)
         {
             //Destroy all highlights from list
-            foreach (GameObject g in hList)
+            for (int i = 0; i < GetList().Count; i++)
             {
                 //Delete the gameObject of the currently active highlight
-                DeleteItem(g);
+                DeleteItem(GetItem(i));
             }
 
             //Clear list itself
@@ -177,12 +128,13 @@ public class ManageHighlights : MonoBehaviour
 
         //Check for the first item in the list
         GameObject prev = getTimelyPrevItem(active);
-
+        Debug.Log(active.GetComponent<HighlightMemory>().getTime());
+        Debug.Log(prev.GetComponent<HighlightMemory>().getTime());          //<--- ERROR: NullReferenceException
         //Check if the the active highlight even has a previous chain item
         if (active.GetComponent<HighlightMemory>().getTime().Subtract(prev.GetComponent<HighlightMemory>().getTime()).TotalMilliseconds <= 1000)
         {
             //Search for the first highlight of the found chain
-            while (active.GetComponent<HighlightMemory>().getTime().Subtract(prev.GetComponent<HighlightMemory>().getTime()).TotalMilliseconds <= 1000)
+            while (prev != null && active.GetComponent<HighlightMemory>().getTime().Subtract(prev.GetComponent<HighlightMemory>().getTime()).TotalMilliseconds <= 1000)
             {
                 //Make the new first highlight the previous highlight of the old first highlight
                 prev = getTimelyPrevItem(prev);
@@ -199,7 +151,7 @@ public class ManageHighlights : MonoBehaviour
         if (next.GetComponent<HighlightMemory>().getTime().Subtract(active.GetComponent<HighlightMemory>().getTime()).TotalMilliseconds <= 1000)
         {
             //Search for the last highlight of the found chain
-            while (next.GetComponent<HighlightMemory>().getTime().Subtract(active.GetComponent<HighlightMemory>().getTime()).TotalMilliseconds <= 1000)
+            while (next != null && next.GetComponent<HighlightMemory>().getTime().Subtract(active.GetComponent<HighlightMemory>().getTime()).TotalMilliseconds <= 1000)
             {
                 //Make the new last highlight the next highlight of the old last highlight
                 next = getTimelyNextItem(next);

@@ -137,7 +137,7 @@ public class Control : MonoBehaviour
         }
 
         //Check if the X-Button is pressed
-        if (Input.GetButtonDown("X-Windows"))
+        if (Input.GetButtonDown("X-Android"))
         {
             //Check if raycast hits the media sphere
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
@@ -159,10 +159,12 @@ public class Control : MonoBehaviour
             //Check if text is already shown
             if (!textShown)
             {
+                //Show the timeline of the currently played video (Current time position|Total video length)
                 ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
             }
             else
             {
+                //Show nothing
                 ShowText(String.Empty);
             }
         }
@@ -177,19 +179,22 @@ public class Control : MonoBehaviour
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
                 Vector2 coords = hit.textureCoord;
 
+                //Scale the texture coordinates on the whole picture size
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
                 //Starts creation of the new highlight
-                ShowTextForTime(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords));
+                mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords);
             }
         }
 
         //Check if the L1-Button is pressed
         if (Input.GetButtonDown("L1-Android"))
         {
+            //
             if (mh.GetList().Count == 0)
             {
+                //
                 StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to create an EDL"));
             }
             else
@@ -276,8 +281,10 @@ public class Control : MonoBehaviour
         //Check if the L"-Button is pressed
         if (Input.GetButtonDown("L2-Android"))
         {
+            //
             if (mh.GetList().Count == 0)
             {
+                //
                 StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to save a file"));
             }
             else
@@ -301,8 +308,11 @@ public class Control : MonoBehaviour
                     {
                         //Make the search circular
                         int index = (i + 1) % mp.GetMovieList().Count;
+
+                        //
                         if (index < 0)
                         {
+                            //
                             index += mp.GetMovieList().Count;
                         }
 
@@ -312,7 +322,7 @@ public class Control : MonoBehaviour
                     }
                 }
                 //Start the new video
-                ShowTextForTime(mp.StartVideo());
+                StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
             else
             {
@@ -335,8 +345,11 @@ public class Control : MonoBehaviour
                     {
                         //Make the search circular
                         int index = (i - 1) % mp.GetMovieList().Count;
+
+                        //
                         if (index < 0)
                         {
+                            //
                             index += mp.GetMovieList().Count;
                         }
 
@@ -346,12 +359,12 @@ public class Control : MonoBehaviour
                     }
                 }
                 //Start the new video
-                ShowTextForTime(mp.StartVideo());
+                StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
             else
             {
                 //Rewind to the start of the video
-                ShowTextForTime(mp.Rewind());
+                StartCoroutine(ShowTextForTime(mp.Rewind()));
             }
         }
 
@@ -360,8 +373,6 @@ public class Control : MonoBehaviour
         {
             //Set the playback speed to double
             mp.SetPlaybackSpeed(1);
-
-            ShowTextForTime("Faster");
         }
 
         //Check if the left DPad-Button is pressed
@@ -369,8 +380,6 @@ public class Control : MonoBehaviour
         {
             //Set the playback speed to half
             mp.SetPlaybackSpeed(2);
-
-            ShowTextForTime("Slower");
         }
 
         //Check if the vertical DPad-Buttons are not pressed anymore
@@ -401,15 +410,11 @@ public class Control : MonoBehaviour
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
                 hit.transform.gameObject.name == "Highlight(Clone)")
             {
-                Debug.Log("Einzeln löschen: " + hit.transform.name);
-
                 //Delete selected highlight
                 mh.DeleteItem(hit.transform.gameObject);
             }
             else
             {
-                Debug.Log("Alle löschen: " + hit.transform.name);
-
                 //Clear complete highlight list and delete all highlights at once
                 mh.ClearList();
             }  
@@ -421,10 +426,12 @@ public class Control : MonoBehaviour
             //Check if text is already shown
             if (!textShown)
             {
+                //Show the timeline of the currently played video (Current time position|Total video length)
                 ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
             }
             else
             {
+                //Show nothing
                 ShowText(String.Empty);
             }
         }
@@ -439,19 +446,22 @@ public class Control : MonoBehaviour
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
                 Vector2 coords = hit.textureCoord;
 
+                //Scale the texture coordinates on the whole picture size
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
                 //Starts creation of the new highlight
-                ShowTextForTime(mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords));
+                mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords);
             }
         }
 
         //Check if the L1-Button is pressed
         if (Input.GetButtonDown("L1-Windows"))
         {
+            //
             if (mh.GetList().Count == 0)
             {
+                //
                 StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to create an EDL"));
             }
             else
@@ -538,8 +548,10 @@ public class Control : MonoBehaviour
         //Check if the L"-Button is pressed
         if (Input.GetButtonDown("L2-Windows"))
         {
+            //
             if (mh.GetList().Count == 0)
             {
+                //
                 StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to save a file"));
             }
             else
@@ -563,8 +575,11 @@ public class Control : MonoBehaviour
                     {
                         //Make the search circular
                         int index = (i + 1) % mp.GetMovieList().Count;
+
+                        //
                         if (index < 0)
                         {
+                            //
                             index += mp.GetMovieList().Count;
                         }
 
@@ -574,7 +589,7 @@ public class Control : MonoBehaviour
                     }
                 }
                 //Start the new video
-                ShowTextForTime(mp.StartVideo());
+                StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
             else
             {
@@ -597,8 +612,11 @@ public class Control : MonoBehaviour
                     {
                         //Make the search circular
                         int index = (i - 1) % mp.GetMovieList().Count;
+
+                        //
                         if (index < 0)
                         {
+                            //
                             index += mp.GetMovieList().Count;
                         }
 
@@ -608,12 +626,12 @@ public class Control : MonoBehaviour
                     }
                 }
                 //Start the new video
-                ShowTextForTime(mp.StartVideo());
+                StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
             else
             {
                 //Rewind to the start of the video
-                ShowTextForTime(mp.Rewind());
+                StartCoroutine(ShowTextForTime(mp.Rewind()));
             }
         }
 
@@ -622,8 +640,6 @@ public class Control : MonoBehaviour
         {
             //Set the playback speed to double
             mp.SetPlaybackSpeed(1);
-
-            ShowTextForTime("Faster");
         }
 
         //Check if the left DPad-Button is pressed
@@ -631,8 +647,6 @@ public class Control : MonoBehaviour
         {
             //Set the playback speed to half
             mp.SetPlaybackSpeed(2);
-
-            ShowTextForTime("Slower");
         }
 
         //Check if the vertical DPad-Buttons are not pressed anymore
@@ -642,17 +656,16 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(0);
         }
 #endif
-        if(textShown)
+        if (textShown)
         {
             ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
         }
-
     }
 
     void CreateEDL(String video)
     {
         //Show the user it started the saving process
-        ShowTextForTime("EDL for " + video + " is creating...");
+        StartCoroutine(ShowTextForTime("EDL for " + video + " is creating..."));
 
         //Create edl file path + name
         String filePath = edlPath + "/" + video + ".edl";
@@ -679,37 +692,53 @@ public class Control : MonoBehaviour
         sw.WriteLine("FCM: NON-DROP FRAME");
         sw.WriteLine();
 
+        //List of all already checked highlights
         List<GameObject> usedHl = new List<GameObject>();
+
+        //The currently checked highlight
         GameObject current;
+
+        //Line count
         int lineCnt = 1;
 
+        //Source start and end point
         TimeSpan srcIN;
         TimeSpan srcOUT;
 
+        //Record start and end point
         TimeSpan recIN = TimeSpan.Zero;
         TimeSpan recOUT = TimeSpan.Zero;
 
+        //Iterate through all spawned highlights
         for (int i = 0; i <= mh.GetList().Count; i++)
         {
+            //Set the currently checked item as the current item of the list of highlights
             current = mh.GetItem(i);
 
+            //Check if the currently checked highlight is not used already
             if (!usedHl.Contains(current))
             {
+                //Get all highlight that are related to another (Determine a possible chain)
                 List<GameObject> chain =  mh.CreateItemChain(current);
 
+                //Cheeck if it is a chain or a single highlight
                 if (chain.Count == 1)
                 {
+                    //Set the source start point and source end point of the clip of the single highlight
                     srcIN = current.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(2));
                     srcOUT = current.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(2));
                 }
                 else
                 {
+                    //Set the source start point and source end point of the clip of the chain
                     srcIN = chain.First<GameObject>().GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(1));
                     srcOUT = chain.Last<GameObject>().GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(1));
                 }
 
+                //Set the end point of the clip
                 recOUT += srcOUT.Subtract(srcIN);
 
+                //Add the recently used highlights to the used highlights list
                 usedHl.AddRange(chain);
 
                 //Convert the given parameters to a complete edl line
@@ -717,8 +746,10 @@ public class Control : MonoBehaviour
                 sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
                 sw.WriteLine();
 
+                //Set the start point of the new clip at the end of the last clip
                 recIN += srcOUT;
 
+                //Increase the line count
                 lineCnt += 1;
             }
         }
@@ -727,14 +758,16 @@ public class Control : MonoBehaviour
         sw.Close();
 
         //Show the user it finished the saving process
-        ShowTextForTime("EDL for " + video + " is created");
+        StartCoroutine(ShowTextForTime("EDL for " + video + " is created"));
     }
 
+    //Opens an already existing edl file
     void OpenEDL(String video)
     {
         StartCoroutine(ShowTextForTime("Opening EDL not yet implemented"));
     }
 
+    //Returns the transition mode for the selected highlight/chain
     int GetTransitionNumber(GameObject highlight)
     {
         int trans;
@@ -759,10 +792,11 @@ public class Control : MonoBehaviour
         return trans;
     }
 
+    //Saves the highlights of the video into a *.hl file
     void Save(String video)
     {
         //Show the user it started the saving process
-        ShowTextForTime(video + " is saving...");
+        StartCoroutine(ShowTextForTime(video + " is saving..."));
 
         //Create edl file path + name
         String filePath = savePath + "/" + video + ".hl";
@@ -801,14 +835,14 @@ public class Control : MonoBehaviour
         sw.Close();
 
         //Show the user it finished the saving process
-        ShowTextForTime(video + " is saved");
+        StartCoroutine(ShowTextForTime(video + " is saved"));
     }
 
     //Load the previously saved highlights for the active video
     void Load(String video)
     {
         //Show the user it started the loading process
-        ShowTextForTime(video + " is loading...");
+        StartCoroutine(ShowTextForTime(video + " is loading..."));
 
         //Create edl file path + name
         String filePath = savePath + "/" + video + ".hl";
@@ -816,55 +850,70 @@ public class Control : MonoBehaviour
         //Check if directory is not created
         if (!Directory.Exists(savePath))
         {
+            //Instead try to open a edl file
             OpenEDL(video);
         }
 
         //Check if file is already created
         if (!File.Exists(filePath))
         {
+            //Instead try to open a edl file
             OpenEDL(video);
         }
         else
         {
+            //Read all lines from the found file
             String[] content = File.ReadAllLines(filePath);
 
+            //Iterate through all lines of the file
             foreach (String line in content)
             {
                 String shortLine = line;
 
+                //Extract the world position part of the line string
                 String posStr = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
+                //Parse the world possition string into a Vector3
                 Vector3 pos = ParseStringToVector3(posStr);
 
+                //Extract the time part of the line string
                 String timeStr = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
+                //Parse the time string into a TimeSpan
                 TimeSpan time = TimeSpan.Parse(timeStr);
 
+                //Extract the type part of the line string
                 String type = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
+                //Extract the texture position part of the line string and parse it into a Vector2
                 Vector2 texPos = ParseStringToVector2(shortLine);
-
+                
+                //Create the highlight from the string
                 mh.AddItem(pos, time, type, texPos);
             }
 
             //Show the user it finished the loading process
-            ShowTextForTime(video + " is loaded");
+            StartCoroutine(ShowTextForTime(video + " is loaded"));
         }
     }
 
     //Parses a given string to a Vector2
     Vector2 ParseStringToVector2(String str)
     {
+        //Check if the vector string is in brackets
         if (str.StartsWith("(") && str.EndsWith(")"))
         {
+            //Delete both brackets from the end and the start of the string
             str = str.Substring(1, str.Length-2);
         }
 
+        //Split the position string into the x and the y coordinate
         String[] array = str.Split(',');
 
+        //Create the Vector2 from both coordinate strings
         Vector2 result = new Vector2(float.Parse(array[0]), float.Parse(array[1]));
 
         return result;
@@ -873,13 +922,17 @@ public class Control : MonoBehaviour
     //Parses a given string to a Vector3
     Vector3 ParseStringToVector3(String str)
     {
+        //Check if the vector string is in brackets
         if (str.StartsWith("(") && str.EndsWith(")"))
         {
+            //Delete both brackets from the end and the start of the string
             str = str.Substring(1, str.Length-2);
         }
 
+        //Split the position string into the x, y and z coordinate
         String[] array = str.Split(',');
 
+        //Create the Vector§ from all three coordinate strings
         Vector3 result = new Vector3(float.Parse(array[0]), float.Parse(array[1]), float.Parse(array[2]));
 
         return result;
@@ -937,12 +990,15 @@ public class Control : MonoBehaviour
     //Shows text for certain time in world space
     void ShowText(String text)
     {
+        //Check if there is text
         if (text != String.Empty)
         {
+            //Set textShown to true
             textShown = true;
         }
         else
         {
+            //Set textShown to false
             textShown = false;
         }
 
