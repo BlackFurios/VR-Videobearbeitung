@@ -184,7 +184,7 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Starts creation of the new highlight
-                mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords);
+                mh.AddItem(hit.point, mp.GetCurrentPos(), "Cut", coords);
             }
         }
 
@@ -451,7 +451,7 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Starts creation of the new highlight
-                mh.AddItem(hit.point, mp.GetCurrentPos(), "Single", coords);
+                mh.AddItem(hit.point, mp.GetCurrentPos(), "Cut", coords);
             }
         }
 
@@ -684,87 +684,204 @@ public class Control : MonoBehaviour
             File.WriteAllText(filePath, String.Empty);
         }
 
-        //Create/Open the edl file
-        StreamWriter sw = new StreamWriter(filePath);
-
-        //Write edl header
-        sw.WriteLine("TITLE: " + video.ToUpper() + "SEQUENCE");
-        sw.WriteLine("FCM: NON-DROP FRAME");
-        sw.WriteLine();
-
-        //List of all already checked highlights
-        List<GameObject> usedHl = new List<GameObject>();
-
-        //The currently checked highlight
-        GameObject current;
-
-        //Line count
-        int lineCnt = 1;
-
-        //Source start and end point
-        TimeSpan srcIN;
-        TimeSpan srcOUT;
-
-        //Record start and end point
-        TimeSpan recIN = TimeSpan.Zero;
-        TimeSpan recOUT = TimeSpan.Zero;
-
-        //Iterate through all spawned highlights
-        for (int i = 0; i <= mh.GetList().Count; i++)
+        if (mh.GetList().Count > 0)
         {
-            //Set the currently checked item as the current item of the list of highlights
-            current = mh.GetItem(i);
+            //Create/Open the edl file
+            StreamWriter sw = new StreamWriter(filePath);
 
-            //Check if the currently checked highlight is not used already
-            if (!usedHl.Contains(current))
+            //Write edl header
+            sw.WriteLine("TITLE: " + video.ToUpper() + "SEQUENCE");
+            sw.WriteLine("FCM: NON-DROP FRAME");
+            sw.WriteLine();
+
+            //List of all already checked highlights
+            List<GameObject> usedHl = new List<GameObject>();
+
+            //The currently checked highlight
+            GameObject current;
+
+            //Line count
+            int lineCnt = 1;
+
+            //
+            String type;
+
+            //Source start and end point
+            TimeSpan srcIN;
+            TimeSpan srcOUT;
+
+            //Record start and end point
+            TimeSpan recIN = TimeSpan.Zero;
+            TimeSpan recOUT = TimeSpan.Zero;
+
+            //Iterate through all spawned highlights
+            for (int i = 0; i < mh.GetList().Count; i++)
             {
-                //Get all highlight that are related to another (Determine a possible chain)
-                List<GameObject> chain =  mh.CreateItemChain(current);
+                //Set the currently checked item as the current item of the list of highlights
+                current = mh.GetItem(i);
 
-                //Cheeck if it is a chain or a single highlight
-                if (chain.Count == 1)
+                //Check if the currently checked highlight is not used already
+                if (!usedHl.Contains(current))
                 {
-                    //Set the source start point and source end point of the clip of the single highlight
-                    srcIN = current.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(2));
-                    srcOUT = current.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(2));
+                    //Get all highlight that are related to another (Determine a possible chain)
+                    List<GameObject> chain = mh.CreateItemChain(current);
+
+                    //Cheeck if it is a chain or a single highlight
+                    if (chain.Count == 1)
+                    {
+                        //Set the source start point and source end point of the clip of the single highlight
+                        srcIN = current.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(2));
+                        srcOUT = current.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(2));
+
+                        //Set the type
+                        type = current.GetComponent<HighlightMemory>().getType();
+                    }
+                    else
+                    {
+                        //Set the source start point and source end point of the clip of the chain
+                        srcIN = chain.First<GameObject>().GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(1));
+                        srcOUT = chain.Last<GameObject>().GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(1));
+
+                        //
+                        type = chain.First<GameObject>().GetComponent<HighlightMemory>().getType();
+                    }
+
+                    //Set the end point of the clip
+                    recOUT += srcOUT.Subtract(srcIN);
+
+                    //Add the recently used highlights to the used highlights list
+                    usedHl.AddRange(chain);
+
+                    //Convert the given parameters to a complete edl line
+                    sw.WriteLine(ec.ConvertToEdlLine(lineCnt, 0, type, srcIN, srcOUT, recIN, recOUT));
+                    sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
+                    sw.WriteLine();
+
+                    //Set the start point of the new clip at the end of the last clip
+                    recIN += srcOUT;
+
+                    //Increase the line count
+                    lineCnt += 1;
                 }
-                else
-                {
-                    //Set the source start point and source end point of the clip of the chain
-                    srcIN = chain.First<GameObject>().GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(1));
-                    srcOUT = chain.Last<GameObject>().GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(1));
-                }
-
-                //Set the end point of the clip
-                recOUT += srcOUT.Subtract(srcIN);
-
-                //Add the recently used highlights to the used highlights list
-                usedHl.AddRange(chain);
-
-                //Convert the given parameters to a complete edl line
-                sw.WriteLine(ec.ConvertEdlLine(lineCnt, 0, 1, srcIN, srcOUT, recIN, recOUT));
-                sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
-                sw.WriteLine();
-
-                //Set the start point of the new clip at the end of the last clip
-                recIN += srcOUT;
-
-                //Increase the line count
-                lineCnt += 1;
             }
+
+            //Close the streamwriter
+            sw.Close();
+
+            //Show the user it finished the saving process
+            StartCoroutine(ShowTextForTime("EDL for " + video + " is created"));
         }
-
-        //Close the streamwriter
-        sw.Close();
-
-        //Show the user it finished the saving process
-        StartCoroutine(ShowTextForTime("EDL for " + video + " is created"));
+        else
+        {
+            //Show the user it finished the saving process
+            StartCoroutine(ShowTextForTime("No Highlights are spawned"));
+        }
     }
 
     //Opens an already existing edl file
     void OpenEDL(String video)
     {
-        StartCoroutine(ShowTextForTime("Opening EDL not yet implemented"));
+        //Show the user it started the loading process
+        StartCoroutine(ShowTextForTime("EDL for " + video + " is loading..."));
+
+        //Create edl file path + name
+        String filePath = edlPath + "/" + video + ".edl";
+
+        //Check if directory is not created
+        if (!Directory.Exists(edlPath))
+        {
+            //Instead try to open a edl file
+            OpenEDL(video);
+        }
+
+        //Check if file is already created
+        if (!File.Exists(filePath))
+        {
+            //Instead try to open a edl file
+            OpenEDL(video);
+        }
+        else
+        {
+            //Characters which should be used to split the edl line
+            char[] whitespace = new char[] { ' ', '\t' };
+
+            //Read all lines from the found file
+            String[] content = File.ReadAllLines(filePath);
+
+            //All edl lines which belong to each other
+            List<String> body = new List<String>();
+
+            //The video from which the lines in body are extracted
+            String extrVideo = String.Empty;
+
+            //Iterate through all lines of the file
+            for (int i = 0; i < content.Length; i++)
+            {
+                //Check if the edl line is empty
+                if (content[i] == String.Empty)
+                {
+                    //The extracted parameters of the analysed edl line (transition, mode, srcIN, srcOUT, etc)
+                    String[] parameters = new String[5];
+
+                    //Iterate through the body
+                    foreach (String str in body)
+                    {
+                        //All words of the analysed edl line seperated from each other
+                        String[] words = str.Split(whitespace);
+                        
+                        switch(words[0])
+                        {
+                            //Check if the currently analysed line is the first line of the edl file
+                            case "TITLE:":
+                                break;
+                            //Check if the currently analysed line is the second line of the edl file
+                            case "FCM:":
+                                break;
+                            //Check if the currently analysed line is a FROM CLIP NAME: <videofile>
+                            case "*":
+                                extrVideo = words[4];
+                                break;
+                            //Check if the currently analysed line is a effect line (Those are currently ignored)
+                            case "M2":
+                                Debug.Log("Effects will be ignored");
+                                break;
+                            //Check if the currently analysed line is a parameter line which can be used to create highlights
+                            default:
+                                parameters = ec.ConvertFromEdlLine(words);
+                                break;
+                        }
+                    }
+
+                    //Check if the new highlight/chain is for the currently active video
+                    if (extrVideo.Substring(0, extrVideo.LastIndexOf(".")).ToUpper() == video.ToUpper())
+                    {
+                        //Set currentTime to the start time of the highlight/chain
+                        TimeSpan currentTime = TimeSpan.Parse(parameters[3]);
+
+                        //
+                        while(currentTime < TimeSpan.Parse(parameters[4]))
+                        {
+                            //Set currentTime to the next time position (currentTime + 0.5 seconds)
+                            currentTime.Add(TimeSpan.FromMilliseconds(500));
+
+                            //Spawn single highlight
+                            mh.AddItem(new Vector3(0,0,0), currentTime, parameters[2], new Vector2(0,0));
+                        }
+                    }
+
+                    //
+                    body.Clear();
+                }
+                else
+                {
+                    //
+                    body.Add(content[i]);
+                }
+            }
+
+            //Show the user it finished the loading process
+            StartCoroutine(ShowTextForTime("EDL for " + video + " is loaded"));
+        }
     }
 
     //Returns the transition mode for the selected highlight/chain
@@ -818,24 +935,32 @@ public class Control : MonoBehaviour
         //Create/Open the edl file
         StreamWriter sw = new StreamWriter(filePath);
 
-        //Write for each highlight a line of parameters in the save file
-        foreach (GameObject g in mh.GetList())
+        if (mh.GetList().Count > 0)
         {
-            String str = String.Empty;
+            //Write for each highlight a line of parameters in the save file
+            foreach (GameObject g in mh.GetList())
+            {
+                String str = String.Empty;
 
-            str += g.transform.position;
-            str += "|" + g.GetComponent<HighlightMemory>().getTime();
-            str += "|" + g.GetComponent<HighlightMemory>().getType();
-            str += "|" + g.GetComponent<HighlightMemory>().getTexPos();
+                str += g.transform.position;
+                str += "|" + g.GetComponent<HighlightMemory>().getTime();
+                str += "|" + g.GetComponent<HighlightMemory>().getType();
+                str += "|" + g.GetComponent<HighlightMemory>().getTexPos();
 
-            sw.WriteLine(str);
+                sw.WriteLine(str);
+            }
+
+            //Close the streamwriter
+            sw.Close();
+
+            //Show the user it finished the saving process
+            StartCoroutine(ShowTextForTime(video + " is saved"));
         }
-
-        //Close the streamwriter
-        sw.Close();
-
-        //Show the user it finished the saving process
-        StartCoroutine(ShowTextForTime(video + " is saved"));
+        else
+        {
+            //Show the user it finished the saving process
+            StartCoroutine(ShowTextForTime("No Highlights are spawned"));
+        }
     }
 
     //Load the previously saved highlights for the active video

@@ -17,8 +17,31 @@ public class EDLConverter : MonoBehaviour
 		
 	}
 
+    //
+    public String[] ConvertFromEdlLine(String[] words)
+    {
+        String[] output = new String[5];
+
+        //
+        output[0] = words[1];
+
+        //
+        output[1] = ConvertTransitionFromEDL(words[2]).ToString();
+
+        //
+        output[2] = ConvertModeFromEDL(words[3]);
+
+        //
+        output[3] = words[4];
+
+        //
+        output[4] = words[5];
+
+        return output;
+    }
+
     //Converts given parameters into a String which resembles a line of a edit decision list
-    public String ConvertEdlLine(int lineCnt, int trans, int mode, TimeSpan srcIN, TimeSpan srcOUT, TimeSpan recIN, TimeSpan recOUT)
+    public String ConvertToEdlLine(int lineCnt, int trans, String mode, TimeSpan srcIN, TimeSpan srcOUT, TimeSpan recIN, TimeSpan recOUT)
     {
         String str = "";
         String fmt = "000";
@@ -31,38 +54,10 @@ public class EDLConverter : MonoBehaviour
         str += "AX" + "       ";
 
         //Create the third clolumn (expl: )
-        if (trans == 0)
-        {
-            //Video and Audio
-            str += "AA/V" + "  ";
-        }
-        else if (trans == 1)
-        {
-            //Only Video
-            str += "V" + "     ";
-        }
-        else
-        {
-            //Only Audio
-            str += "AA" + "    ";
-        }
+        str += ConvertTransitionToEDL(trans);
 
         //Create the fourth clolumn (expl: )
-        if (mode == 0)
-        {
-            //Cut
-            str += "C" + "   ";
-        }
-        else if (mode == 1)
-        {
-            //Dissolve
-            str += "D" + "   ";
-        }
-        else
-        {
-            //Wipe
-            str += "W" + "   ";
-        }
+        str += ConvertModeToEDL(mode);
 
         //Create the fifth clolumn (expl: 00:00:00:00, 00:00:10:00)
         str += srcIN.ToString() + " ";
@@ -77,5 +72,85 @@ public class EDLConverter : MonoBehaviour
         str += recOUT.ToString();
 
         return str;
+    }
+
+    //
+    private String ConvertTransitionToEDL(int trans)
+    {
+        //
+        if (trans == 0)
+        {
+            //Video and Audio
+            return "AA/V" + "  ";
+        }
+        else if (trans == 1)
+        {
+            //Only Video
+            return "V" + "     ";
+        }
+        else
+        {
+            //Only Audio
+            return "AA" + "    ";
+        }
+    }
+
+    //
+    private int ConvertTransitionFromEDL(String trans)
+    {
+        //
+        if (trans == "AA/V")
+        {
+            //Video and Audio
+            return 0;
+        }
+        else if (trans == "V")
+        {
+            //Only Video
+            return 1;
+        }
+        else
+        {
+            //Only Audio
+            return 2;
+        }
+    }
+
+    private String ConvertModeToEDL(String mode)
+    {
+        if (mode == "Cut")
+        {
+            //Cut
+            return "C" + "   ";
+        }
+        else if (mode == "Dissolve")
+        {
+            //Dissolve
+            return "D" + "   ";
+        }
+        else
+        {
+            //Wipe
+            return "W" + "   ";
+        }
+    }
+
+    private String ConvertModeFromEDL(String mode)
+    {
+        if (mode == "C")
+        {
+            //Cut
+            return "Cut";
+        }
+        else if (mode == "D")
+        {
+            //Dissolve
+            return "Dissolve";
+        }
+        else
+        {
+            //Wipe
+            return "Wipe";
+        }
     }
 }

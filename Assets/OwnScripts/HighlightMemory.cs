@@ -8,7 +8,7 @@ public class HighlightMemory : MonoBehaviour
     [SerializeField]
     private TimeSpan        ts;             //Point curing video at which this highlight is
     [SerializeField]
-    private String          type;           //What type of highlight is this (Single, Chain)
+    private String          type;           //What type of highlight is this (Cut, Dissolve, Wipe)
     [SerializeField]
     private Vector2         texPos;         //The position of this highlight on the video itself
 
