@@ -17,24 +17,24 @@ public class EDLConverter : MonoBehaviour
 		
 	}
 
-    //
+    //Returns the parameters which can be extracted from the given edl line
     public String[] ConvertFromEdlLine(String[] words)
     {
         String[] output = new String[5];
 
-        //
+        //Extract the second column (expl: C001, C002, ..., C014, ...)
         output[0] = words[1];
 
-        //
+        //Extract the third column (expl: AA/V, V, AA)
         output[1] = ConvertTransitionFromEDL(words[2]).ToString();
 
-        //
+        //Extract the fourth clolumn (expl: Cut, Dissovle, Wipe)
         output[2] = ConvertModeFromEDL(words[3]);
 
-        //
+        //Extract the fifth clolumn (expl: 00:00:00:00, 00:00:10:00)
         output[3] = words[4];
 
-        //
+        //Extract the sixth clolumn (expl: 00:00:10:00, 00:11:04:00)
         output[4] = words[5];
 
         return output;
@@ -50,44 +50,45 @@ public class EDLConverter : MonoBehaviour
         str += lineCnt.ToString(fmt) + "  ";
 
         //Create the second clolumn (expl: C001, C002, ..., C014, ...)
-        //str += "C" + lineCnt.ToString(fmt) + "      ";
         str += "AX" + "       ";
 
-        //Create the third clolumn (expl: )
+        //Create the third clolumn (expl: AA/V, V, AA)
         str += ConvertTransitionToEDL(trans);
 
-        //Create the fourth clolumn (expl: )
+        //Create the fourth clolumn (expl: C, D, W)
         str += ConvertModeToEDL(mode);
 
         //Create the fifth clolumn (expl: 00:00:00:00, 00:00:10:00)
-        str += srcIN.ToString() + " ";
+        str += FormatTimeSpan(srcIN) + " ";
 
         //Create the sixth clolumn (expl: 00:00:10:00, 00:11:04:00)
-        str += srcOUT.ToString() + " ";
+        str += FormatTimeSpan(srcOUT) + " ";
 
         //Create the seventh clolumn (expl: 00:00:00:00, 00:00:10:00)
-        str += recIN.ToString() + " ";
+        str += FormatTimeSpan(recIN) + " ";
 
         //Create the eighth clolumn (expl: 00:00:10:00, 00:11:04:00)
-        str += recOUT.ToString();
+        str += FormatTimeSpan(recOUT);
 
         return str;
     }
 
-    //
+    //Returns the transition string to implement in the created edl line
     private String ConvertTransitionToEDL(int trans)
     {
-        //
+        //Check if the transition number is 0
         if (trans == 0)
         {
             //Video and Audio
             return "AA/V" + "  ";
         }
+        //Check if the transition number is 1
         else if (trans == 1)
         {
             //Only Video
             return "V" + "     ";
         }
+        //Check if the transition number is 2
         else
         {
             //Only Audio
@@ -95,20 +96,22 @@ public class EDLConverter : MonoBehaviour
         }
     }
 
-    //
+    //Returns the number which is extracted from the transition string from the given edl line
     private int ConvertTransitionFromEDL(String trans)
     {
-        //
+        //Check if the transition string equals the audio and video mode
         if (trans == "AA/V")
         {
             //Video and Audio
             return 0;
         }
+        //Check if the transition string equals the only video mode
         else if (trans == "V")
         {
             //Only Video
             return 1;
         }
+        //Check if the transition string equals the only audio mode
         else
         {
             //Only Audio
@@ -116,18 +119,22 @@ public class EDLConverter : MonoBehaviour
         }
     }
 
+    //Returns the mode string to implement in the created edl line
     private String ConvertModeToEDL(String mode)
     {
+        //Check if the mode string equals the Cut mode
         if (mode == "Cut")
         {
             //Cut
             return "C" + "   ";
         }
+        //Check if the mode string equals the Dissolve mode
         else if (mode == "Dissolve")
         {
             //Dissolve
             return "D" + "   ";
         }
+        //Check if the mode string equals the Wipe mode
         else
         {
             //Wipe
@@ -135,22 +142,52 @@ public class EDLConverter : MonoBehaviour
         }
     }
 
+    //Returns the string which is extracted from the mode string from the given edl line
     private String ConvertModeFromEDL(String mode)
     {
+        //Check if the mode string equals the Cut mode
         if (mode == "C")
         {
             //Cut
             return "Cut";
         }
+        //Check if the mode string equals the Dissolve mode
         else if (mode == "D")
         {
             //Dissolve
             return "Dissolve";
         }
+        //Check if the mode string equals the Wipe mode
         else
         {
             //Wipe
             return "Wipe";
         }
+    }
+
+    //Returns a formatted string to use in an edl line from the given TimeSpan
+    private String FormatTimeSpan(TimeSpan time)
+    {
+        String output = time.ToString();
+
+        //Check if the given TimeSpan is 00:00:00
+        if (time == TimeSpan.Zero)
+        {
+            //Add the milliseconds section
+            output += ":00";
+        }
+        else
+        {
+            //Extract and shorten the milliseconds section from the given TimeSpan
+            String milSecStr = output.Substring(output.LastIndexOf(".") + 1, 2);
+
+            //Set the output to only the hours, minutes and seconds sections (xx:xx:xx)
+            output = output.Substring(0, output.LastIndexOf("."));
+
+            //Add the milliseconds section
+            output += ":" + milSecStr;
+        }
+
+        return output;
     }
 }

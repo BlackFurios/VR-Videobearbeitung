@@ -207,23 +207,25 @@ public class ManageHighlights : MonoBehaviour
         return chain;
     }
 
-    //
+    //Returns the timely previous highlight of the given highlight
     public GameObject getTimelyPrevItem(GameObject active)
     {
         GameObject output = null;
         TimeSpan minDif = TimeSpan.MaxValue;
 
-        //
+        //Iterate through all highlights
         foreach (GameObject current in GetList())
         {
-            //
+            //Get the time difference between the given and the currently checked highlight
             TimeSpan difference = active.GetComponent<HighlightMemory>().getTime().Subtract(current.GetComponent<HighlightMemory>().getTime());
 
-            //
-            if (difference.TotalMilliseconds < minDif.TotalMilliseconds && difference > TimeSpan.Zero)
+            //Check if the new difference is shorter than the currently shortest time difference
+            if (difference > TimeSpan.Zero && difference.TotalMilliseconds < minDif.TotalMilliseconds)
             {
-                //
+                //Set the new difference as new shortest time difference
                 minDif = difference;
+
+                //Define the currently checked highlight as new previous highlight to return
                 output = current;
             }
         }
@@ -231,19 +233,25 @@ public class ManageHighlights : MonoBehaviour
         return output;
     }
 
-    //
+    //Returns the timely next highlight of the given highlight
     public GameObject getTimelyNextItem(GameObject active)
     {
         GameObject output = null;
         TimeSpan minDif = TimeSpan.MaxValue;
 
+        //Iterate through all highlights
         foreach (GameObject current in GetList())
         {
+            //Get the time difference between the given and the currently checked highlight
             TimeSpan difference = current.GetComponent<HighlightMemory>().getTime().Subtract(active.GetComponent<HighlightMemory>().getTime());
-            
+
+            //Check if the new difference is shorter than the currently shortest time difference
             if (difference.TotalMilliseconds < minDif.TotalMilliseconds && difference > TimeSpan.Zero)
             {
+                //Set the new difference as new shortest time difference
                 minDif = difference;
+
+                //Define the currently checked highlight as new next highlight to return
                 output = current;
             }
         }
@@ -251,18 +259,25 @@ public class ManageHighlights : MonoBehaviour
         return output;
     }
 
+    //Returns the position next highlight of the given highlight
     public GameObject getPosNextItem(GameObject active)
     {
         GameObject output = null;
         float minDif = float.MaxValue;
 
+        //Iterate through all highlights
         foreach (GameObject current in GetList())
         {
+            //Get the time difference between the given and the currently checked highlight
             float difference = Vector2.Distance(active.GetComponent<HighlightMemory>().getTexPos(), current.GetComponent<HighlightMemory>().getTexPos());
 
+            //Check if the new difference is shorter than the currently shortest position difference
             if (difference <= minDif)
             {
+                //Set the new difference as new shortest position difference
                 minDif = difference;
+
+                //Define the currently checked highlight as new next highlight to return
                 output = current;
             }
         }

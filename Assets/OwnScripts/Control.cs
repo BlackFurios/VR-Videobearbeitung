@@ -28,7 +28,7 @@ public class Control : MonoBehaviour
     
     private bool opened = false;                                //Is the drodown list opened
     private bool pausing = false;                               //Is the video currently paused
-    private bool textShown = false;                             //Is currently a text shown
+    private bool timeShown = false;                             //Is currently a text shown
     private int showTime = 1;                                   //How long texts should be shown in seconds
 
     private float delTimer;                                     //Timer for long button press on X-Button
@@ -157,7 +157,7 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("Y-Android"))
         {
             //Check if text is already shown
-            if (!textShown)
+            if (!timeShown)
             {
                 //Show the timeline of the currently played video (Current time position|Total video length)
                 ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
@@ -191,10 +191,10 @@ public class Control : MonoBehaviour
         //Check if the L1-Button is pressed
         if (Input.GetButtonDown("L1-Android"))
         {
-            //
+            //Check if the highlight list is empty
             if (mh.GetList().Count == 0)
             {
-                //
+                //Show text to the user to inform him that the highlight list is empty
                 StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to create an EDL"));
             }
             else
@@ -221,7 +221,7 @@ public class Control : MonoBehaviour
                         //Give every Item own box collider
                         for (int i = 1; i < list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.childCount; i++)
                         {
-                            //
+                            //Create a collider for every item in the dropdown list
                             list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.AddComponent<BoxCollider>();
                             list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.GetComponent<BoxCollider>().size = new Vector3(158, 28, 1);
                         }
@@ -281,10 +281,10 @@ public class Control : MonoBehaviour
         //Check if the L"-Button is pressed
         if (Input.GetButtonDown("L2-Android"))
         {
-            //
+            //Check if the highlight list is empty
             if (mh.GetList().Count == 0)
             {
-                //
+                //Show text to the user to inform him that the highlight list is empty
                 StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to save a file"));
             }
             else
@@ -309,10 +309,10 @@ public class Control : MonoBehaviour
                         //Make the search circular
                         int index = (i + 1) % mp.GetMovieList().Count;
 
-                        //
+                        //Check if the index reached the end of the list
                         if (index < 0)
                         {
-                            //
+                            //Let the index wrap around to make the list circular
                             index += mp.GetMovieList().Count;
                         }
 
@@ -346,10 +346,10 @@ public class Control : MonoBehaviour
                         //Make the search circular
                         int index = (i - 1) % mp.GetMovieList().Count;
 
-                        //
+                        //Check if the index reached the end of the list
                         if (index < 0)
                         {
-                            //
+                            //Let the index wrap around to make the list circular
                             index += mp.GetMovieList().Count;
                         }
 
@@ -424,7 +424,7 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("Y-Windows"))
         {
             //Check if text is already shown
-            if (!textShown)
+            if (!timeShown)
             {
                 //Show the timeline of the currently played video (Current time position|Total video length)
                 ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
@@ -458,10 +458,10 @@ public class Control : MonoBehaviour
         //Check if the L1-Button is pressed
         if (Input.GetButtonDown("L1-Windows"))
         {
-            //
+            //Check if the highlight list is empty
             if (mh.GetList().Count == 0)
             {
-                //
+                //Show text to the user to inform him that the highlight list is empty
                 StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to create an EDL"));
             }
             else
@@ -474,7 +474,7 @@ public class Control : MonoBehaviour
         //Check if the R2-Button is pressed
         if (Input.GetButton("R2-Windows"))
         {
-            // Check if the StartMenu is enabled and the dropdown list is closed
+            //Check if the StartMenu is enabled and the dropdown list is closed
             if (stMenu.enabled == true && opened == false && 
                 Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
@@ -488,7 +488,7 @@ public class Control : MonoBehaviour
                         //Give every Item own box collider
                         for (int i = 1; i < list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.childCount; i++)
                         {
-                            //
+                            //Create a collider for every item in the dropdown list
                             list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.AddComponent<BoxCollider>();
                             list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.GetComponent<BoxCollider>().size = new Vector3(158, 28, 1);
                         }
@@ -548,10 +548,10 @@ public class Control : MonoBehaviour
         //Check if the L"-Button is pressed
         if (Input.GetButtonDown("L2-Windows"))
         {
-            //
+            //Check if the highlight list is empty
             if (mh.GetList().Count == 0)
             {
-                //
+                //Show text to the user to inform him that the highlight list is empty
                 StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to save a file"));
             }
             else
@@ -576,10 +576,10 @@ public class Control : MonoBehaviour
                         //Make the search circular
                         int index = (i + 1) % mp.GetMovieList().Count;
 
-                        //
+                        //Check if the index reached the end of the list
                         if (index < 0)
                         {
-                            //
+                            //Let the index wrap around to make the list circular
                             index += mp.GetMovieList().Count;
                         }
 
@@ -613,10 +613,10 @@ public class Control : MonoBehaviour
                         //Make the search circular
                         int index = (i - 1) % mp.GetMovieList().Count;
 
-                        //
+                        //Check if the index reached the end of the list
                         if (index < 0)
                         {
-                            //
+                            //Let the index wrap around to make the list circular
                             index += mp.GetMovieList().Count;
                         }
 
@@ -656,12 +656,14 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(0);
         }
 #endif
-        if (textShown)
-        {
+        //Check if time is already shown
+        if (timeShown)
+        {   //Show the updated time to the user
             ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
         }
     }
 
+    //Creates or updates an existing edl file with all currently spawned highlights of the currently active video
     void CreateEDL(String video)
     {
         //Show the user it started the saving process
@@ -684,6 +686,7 @@ public class Control : MonoBehaviour
             File.WriteAllText(filePath, String.Empty);
         }
 
+        //Check if the highlight list is not empty
         if (mh.GetList().Count > 0)
         {
             //Create/Open the edl file
@@ -703,7 +706,7 @@ public class Control : MonoBehaviour
             //Line count
             int lineCnt = 1;
 
-            //
+            //The type of the highlight (Cut, Dissolve, Wipe)
             String type;
 
             //Source start and end point
@@ -742,7 +745,7 @@ public class Control : MonoBehaviour
                         srcIN = chain.First<GameObject>().GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(1));
                         srcOUT = chain.Last<GameObject>().GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(1));
 
-                        //
+                        //Set the type
                         type = chain.First<GameObject>().GetComponent<HighlightMemory>().getType();
                     }
 
@@ -758,7 +761,7 @@ public class Control : MonoBehaviour
                     sw.WriteLine();
 
                     //Set the start point of the new clip at the end of the last clip
-                    recIN += srcOUT;
+                    recIN += recOUT.Subtract(recIN);
 
                     //Increase the line count
                     lineCnt += 1;
@@ -787,18 +790,10 @@ public class Control : MonoBehaviour
         //Create edl file path + name
         String filePath = edlPath + "/" + video + ".edl";
 
-        //Check if directory is not created
-        if (!Directory.Exists(edlPath))
-        {
-            //Instead try to open a edl file
-            OpenEDL(video);
-        }
-
         //Check if file is already created
         if (!File.Exists(filePath))
         {
-            //Instead try to open a edl file
-            OpenEDL(video);
+
         }
         else
         {
@@ -858,7 +853,7 @@ public class Control : MonoBehaviour
                         //Set currentTime to the start time of the highlight/chain
                         TimeSpan currentTime = TimeSpan.Parse(parameters[3]);
 
-                        //
+                        //While the line has not ended spawn new highlights
                         while(currentTime < TimeSpan.Parse(parameters[4]))
                         {
                             //Set currentTime to the next time position (currentTime + 0.5 seconds)
@@ -869,12 +864,12 @@ public class Control : MonoBehaviour
                         }
                     }
 
-                    //
+                    //Clear the complete body after creating the necessary highlights
                     body.Clear();
                 }
                 else
                 {
-                    //
+                    //Add the current line to the body of connected lines
                     body.Add(content[i]);
                 }
             }
@@ -935,6 +930,7 @@ public class Control : MonoBehaviour
         //Create/Open the edl file
         StreamWriter sw = new StreamWriter(filePath);
 
+        //Check if the highlight list is not empty
         if (mh.GetList().Count > 0)
         {
             //Write for each highlight a line of parameters in the save file
@@ -942,11 +938,13 @@ public class Control : MonoBehaviour
             {
                 String str = String.Empty;
 
+                //Construct a string from the highlight parameters
                 str += g.transform.position;
                 str += "|" + g.GetComponent<HighlightMemory>().getTime();
                 str += "|" + g.GetComponent<HighlightMemory>().getType();
                 str += "|" + g.GetComponent<HighlightMemory>().getTexPos();
 
+                //Write the constructed string to the file
                 sw.WriteLine(str);
             }
 
@@ -971,13 +969,6 @@ public class Control : MonoBehaviour
 
         //Create edl file path + name
         String filePath = savePath + "/" + video + ".hl";
-
-        //Check if directory is not created
-        if (!Directory.Exists(savePath))
-        {
-            //Instead try to open a edl file
-            OpenEDL(video);
-        }
 
         //Check if file is already created
         if (!File.Exists(filePath))
@@ -1087,7 +1078,7 @@ public class Control : MonoBehaviour
         String prevText = "";
 
         //Check if text already is shown
-        if (textShown)
+        if (timeShown)
         {
             //Save the currently shown text
             prevText = vrMenu.GetComponent<Text>().text;
@@ -1100,7 +1091,7 @@ public class Control : MonoBehaviour
         yield return new WaitForSeconds(showTime);
 
         //Stop showing the input text on the VRMenu
-        if (textShown)
+        if (timeShown)
         {
             //Start showing the previous text
             vrMenu.GetComponent<Text>().text = prevText;
@@ -1116,15 +1107,15 @@ public class Control : MonoBehaviour
     void ShowText(String text)
     {
         //Check if there is text
-        if (text != String.Empty)
+        if (text != String.Empty && text.Contains(" | "))
         {
             //Set textShown to true
-            textShown = true;
+            timeShown = true;
         }
         else
         {
             //Set textShown to false
-            textShown = false;
+            timeShown = false;
         }
 
         //Start showing the input text on the VRMenu

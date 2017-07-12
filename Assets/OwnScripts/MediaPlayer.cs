@@ -26,7 +26,7 @@ using System.Runtime.InteropServices;		//required for DllImport
 using System;								//required for IntPtr
 using System.IO;                            //required for File
 using UnityEngine.Video;                    //required for VideoPlayer
-using UnityEngine.UI;
+using UnityEngine.UI;                       //required for Canvas
 
 /************************************************************************************
 Usage:
@@ -507,15 +507,6 @@ public class MediaPlayer : MonoBehaviour
     {
         return movieList[index].movie;
     }
-    
-    public void TestOutput()
-    {
-#if (UNITY_ANDROID && !UNITY_EDITOR)
-        StartCoroutine(ShowTextForTest("Params: " + playerParams));
-#else
-
-#endif
-    }
 
     //Sets the playback speed of the currently played video
     public void SetPlaybackSpeed(int mode)
@@ -527,25 +518,30 @@ public class MediaPlayer : MonoBehaviour
             //Set video playback to normal (mode 0)
             if (mode == 0)
             {
+                //Set the player parameters to normal speed
                 playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 1f);
+
+                //Set the android media player on normal speed
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
 
             //Set video playback to fast (mode 1)
             if (mode == 1)
             {
-                StartCoroutine(ShowTextForTest("Fast"));
-
+                //Set the player parameters to fast speed
                 playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 2f);
+
+                //Set the android media player on fast speed
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
 
             //Set video playback to slow (mode 2)
             if (mode == 2)
             {
-                StartCoroutine(ShowTextForTest("Slow"));
-
+                //Set the player parameters to slow speed
                 playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 0.5f);
+
+                //Set the android media player on slow speed
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
         }
@@ -624,7 +620,7 @@ public class MediaPlayer : MonoBehaviour
 			try
 			{
                 //Set the new pausing state in the android media player
-				mediaPlayer.Call((videoPaused) ? "pause" : "start");
+				mediaPlayer.Call((!videoPaused) ? "pause" : "start");
 			}
 			catch (Exception e)
 			{
@@ -638,8 +634,8 @@ public class MediaPlayer : MonoBehaviour
             //Set the pausing variable to the new state
             videoPaused = wasPaused;
 
-            //
-            if (videoPaused)
+            //Check if the video player is already paused
+            if (!videoPaused)
             {
                 //Pauses the VideoPlayer
                 vp.Pause();
@@ -774,22 +770,6 @@ public class MediaPlayer : MonoBehaviour
 
 		return playbackParams;
 	}
-
-    //class MediaPlayerEndListener : AndroidJavaProxy
-    //{
-    //    public MediaPlayerEndListener() : base("android.media.MediaPlayer$OnCompletionListener") {}
-
-    //    void onCompletion(AndroidJavaObject mediaPlayer)
-    //    {
-    //        //Start the video player with the new video
-    //        updStr = StartVideo();
-
-    //        if(updStr != null)
-    //        {
-    //            Debug.LogError("No valid video found");
-    //        }
-    //    }
-    //}
 #endif
 
 #if (UNITY_ANDROID && !UNITY_EDITOR)

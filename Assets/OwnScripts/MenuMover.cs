@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class MenuMover : MonoBehaviour
 {
-    Camera cam;
-    float angle;
-    float prevAngle;
+    Camera      cam;                //The main camera (player view)
+    float       angle;              //The angle which the menu needs to rotate around to align with the main camera
+    float       prevAngle;          //The angle in the previous frame (Shows a movement)
 
 	// Use this for initialization
 	void Start ()
