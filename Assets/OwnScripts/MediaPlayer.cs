@@ -20,12 +20,13 @@ limitations under the License.
 ************************************************************************************/
 
 using UnityEngine;
-using System.Collections;					// required for Coroutines
-using System.Collections.Generic;           // required for Lists
-using System.Runtime.InteropServices;		// required for DllImport
-using System;								// required for IntPtr
-using System.IO;                            // required for File
-using UnityEngine.Video;
+using System.Collections;					//required for Coroutines
+using System.Collections.Generic;           //required for Lists
+using System.Runtime.InteropServices;		//required for DllImport
+using System;								//required for IntPtr
+using System.IO;                            //required for File
+using UnityEngine.Video;                    //required for VideoPlayer
+using UnityEngine.UI;                       //required for Canvas
 
 /************************************************************************************
 Usage:
@@ -67,6 +68,8 @@ Implementation:
 
 public class MediaPlayer : MonoBehaviour
 {
+    private Canvas vrMenu;                                              //Instance of the VRMenu object
+
     private List<videoList>     movieList = new List<videoList>();      //List of all available videos with their paths
 
     private string              movieName = string.Empty;               //Name of the video which is currently played
@@ -145,24 +148,38 @@ public class MediaPlayer : MonoBehaviour
     /// </summary>
     public void Awake()
     {
+        //Search for VRMenu and highlightMenu
+        foreach (Canvas c in FindObjectsOfType<Canvas>())
+        {
+            //Check if the currently found canvas is the VRMenu
+            if (c.name == "VRMenu")
+            {
+                //Sets the VRMenu
+                vrMenu = c;
+            }
+        }
+
         Debug.Log("MovieSample Awake");
 
 #if UNITY_ANDROID && !UNITY_EDITOR
 		OVR_Media_Surface_Init();
 #endif
-
+        //Sets the Renderer script
         mediaRenderer = GetComponent<Renderer>();
 #if !UNITY_ANDROID || UNITY_EDITOR
+        //Sets the Video Player script
         vp = GetComponent<VideoPlayer>();
 
+        //Sets the Audio Source script
         audioEmitter = GetComponent<AudioSource>();
 #endif
-
+        //Check if the renderer material is null or no texture to display the video exists
         if (mediaRenderer.material == null || mediaRenderer.material.mainTexture == null)
         {
             Debug.LogError("No material for movie surface");
         }
 
+        //Check if no video is selected
         if (movieName == string.Empty)
         {
             String absPath;
@@ -180,6 +197,7 @@ public class MediaPlayer : MonoBehaviour
             //Add all detected files to the list of available movies
             foreach (String str in files)
             {
+                //Add the currently selected video to the list of all found videos with their absolute paths
                 movieList.Add(new videoList(str.Substring(str.LastIndexOf("/") + 1), str));
             }
 
@@ -208,40 +226,53 @@ public class MediaPlayer : MonoBehaviour
 #if UNITY_ANDROID && !UNITY_EDITOR
 		string streamingMediaPath = "file://";
         string persistentPath = "";
-         foreach (videoList vl in movieList)
+
+        //Iterate through the list of all found videos
+        foreach (videoList vl in movieList)
         {
+            //Check for the currently selected video in the list of all found videos
             if(vl.movie.Substring(0, vl.movie.LastIndexOf(".")) == mediaFileName)
             {
+                //Make the found path the play path for the player
                 streamingMediaPath = vl.path;
                 persistentPath = vl.path;
                 break;
             }
         }
         
+        //Check if the video file exists
 		if (!File.Exists(persistentPath))
 		{
+            //Create a wwwReader to read the video file
 			WWW wwwReader = new WWW(streamingMediaPath);
 			yield return wwwReader;
 
+            //Check if the wwwReader has finished with a error
 			if (wwwReader.error != null)
 			{
 				Debug.LogError("wwwReader error: " + wwwReader.error);
 			}
 
+            //Write the video file by byte to the wwwReader
 			System.IO.File.WriteAllBytes(persistentPath, wwwReader.bytes);
 		}
 		mediaFullPath = persistentPath;
 #else
         string streamingMediaPath = "file://";
+
+        //Iterate through the list of all found videos
         foreach (videoList vl in movieList)
         {
+            //Check for the currently selected video in the list of all found videos
             if (vl.movie.Substring(0, vl.movie.LastIndexOf(".")) == mediaFileName)
             {
+                //Make the found path the play path for the player
                 streamingMediaPath += vl.path;
                 break;
             }
         }
 
+        //Set the path to be the url for the VideoPlayer script
         vp.url = streamingMediaPath;
         yield return vp;
 
@@ -259,19 +290,24 @@ public class MediaPlayer : MonoBehaviour
     /// </summary>
     IEnumerator DelayedStartVideo()
     {
-        yield return null; // delaystartedVideo 1 frame to allow MediaSurfaceInit from the render thread.
+        //DelaystartedVideo 1 frame to allow MediaSurfaceInit from the render thread
+        yield return null;
 
+        //Check if the player already started playing
         if (!startedVideo)
         {
             Debug.Log("Mediasurface DelayedStartVideo");
 
             startedVideo = true;
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+            //Create the playerParams class to manage the playback of the android media player
+            //playerParams = CreatePlayerParams();
+
+            //Create the android media player and set the texture to display the video
 			mediaPlayer = StartVideoPlayerOnTextureId(textureWidth, textureHeight, mediaFullPath);
 			mediaRenderer.material.mainTexture = nativeTexture;
-
-            playerParams = CreateMediaPlayerParams();
 #else
+            //Prepare the VideoPlayer script
             vp.Prepare();
 
             Debug.Log("Video is playing");
@@ -280,11 +316,13 @@ public class MediaPlayer : MonoBehaviour
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         try
 		{
+            //Set the parameters with which the android media player will be started and start the player
             mediaPlayer.Call("reset");
 			mediaPlayer.Call("setDataSource", mediaFullPath);
 			mediaPlayer.Call("prepare");
-			mediaPlayer.Call("setLooping", true);
+			mediaPlayer.Call("setLooping", false);
 			mediaPlayer.Call("start");
+            playerParams = CreatePlayerParams(mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams"));
 		}
 		catch (Exception e)
 		{
@@ -301,51 +339,8 @@ public class MediaPlayer : MonoBehaviour
         //Check if video player is there
         if (mediaPlayer != null) 
         {
-            ////Check if the video player is playing and is at the end of the video
-            //if (!videoPaused && GetCurrentPos() == GetMovieLength())
-            //{
-            //    //Iterate through all videos
-            //    for (int i = 0; i < GetMovieList().Count; i++)
-            //    {
-            //        //Check for the current video
-            //        if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
-            //        {
-            //            //Make the array a cycle (0 -> 1 -> 2 -> 0)
-            //            int index = (i + 1) % GetMovieList().Count;
-            //            if (index < 0)
-            //            {
-            //                index += GetMovieList().Count;
-            //            }
-
-            //            //Set the next videoas current video
-            //            SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
-            //            break;
-            //        }
-            //    }
-            //    //Start the video player with the new video
-            //    updStr = StartVideo();
-
-            //    if(updStr != null)
-            //    {
-            //        Debug.LogError("No valid video found");
-            //    }
-            //}
-
-            IntPtr currTexId = OVR_Media_Surface_GetNativeTexture();
-            if (currTexId != nativeTexId)
-            {
-                nativeTexId = currTexId;
-                nativeTexture.UpdateExternalTexture(currTexId);
-            }
-
-            IssuePluginEvent(MediaSurfaceEventType.Update);
-        }
-#else
-        //Check if video player is there
-        if (vp != null)
-        {
             //Check if the video player is playing and is at the end of the video
-            if (vp.isPlaying && GetCurrentPos() == GetMovieLength())
+            if (!videoPaused && GetCurrentPos().TotalMilliseconds == GetMovieLength().TotalMilliseconds - 1000)
             {
                 //Iterate through all videos
                 for (int i = 0; i < GetMovieList().Count; i++)
@@ -374,15 +369,64 @@ public class MediaPlayer : MonoBehaviour
                 }
             }
 
+            IntPtr currTexId = OVR_Media_Surface_GetNativeTexture();
+            if (currTexId != nativeTexId)
+            {
+                nativeTexId = currTexId;
+                nativeTexture.UpdateExternalTexture(currTexId);
+            }
+
+            IssuePluginEvent(MediaSurfaceEventType.Update);
+        }
+#else
+        //Check if video player is there
+        if (vp != null)
+        {
+            //Check if the video player is playing and is at the end of the video
+            if (vp.isPlaying && GetCurrentPos().TotalSeconds == GetMovieLength().TotalSeconds - 1)
+            {
+                //Iterate through all videos
+                for (int i = 0; i < GetMovieList().Count; i++)
+                {
+                    //Check for the current video
+                    if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
+                    {
+                        //Make the array a cycle (0 -> 1 -> 2 -> 0)
+                        int index = (i + 1) % GetMovieList().Count;
+                        if (index < 0)
+                        {
+                            index += GetMovieList().Count;
+                        }
+
+                        //Set the next videoas current video
+                        SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                //Start the video player with the new video
+                updStr = StartVideo();
+
+                //Check if the player started with a valid video
+                if(updStr != null)
+                {
+                    Debug.LogError("No valid video found");
+                }
+            }
+
+            //Start playing the video player
             vp.Play();
+
+            //Check if the audio source script is null
             if (audioEmitter != null)
             {
+                //Start playing the audio source
                 audioEmitter.Play();
             }
         }
 #endif
     }
 
+    //Starts the player with a given video
     public String StartVideo()
     {
         //Unpauses the media player before starting the video
@@ -393,6 +437,7 @@ public class MediaPlayer : MonoBehaviour
         return movieName;
     }
 
+    //Returns to length of the currently active video
     public TimeSpan GetMovieLength()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
@@ -402,6 +447,7 @@ public class MediaPlayer : MonoBehaviour
 #endif
     }
 
+    //Returns the current time position in the currently active video (Android -> Milliseconds | Windows -> Seconds)
     public TimeSpan GetCurrentPos()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
@@ -411,13 +457,16 @@ public class MediaPlayer : MonoBehaviour
 #endif
     }
 
+    //Jumps to a specific time position in the currently active video
     public void JumpToPos(int pos)
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+        //Check if the android media player is null
         if (mediaPlayer != null)
         {
             try
 			{
+                //Jump to the given time position in the android media player
 				mediaPlayer.Call("seekTo", pos);
 			}
 			catch (Exception e)
@@ -426,60 +475,78 @@ public class MediaPlayer : MonoBehaviour
 			}
         }
 #else
+        //Check if the VideoPlayer is null
         if (vp != null)
         {
+            //Jump to the given time position in the VideoPlayer
             vp.time = pos;
         }
 #endif
     }
 
+    //Sets the currently active video
     public void SetMovieName(String val)
     {
         movieName = val;
     }
 
+    //Returns the currently active video
     public String GetMovieName()
     {
         return movieName;
     }
 
+    //Returns the list of all found videos
     public List<videoList> GetMovieList()
     {
         return movieList;
     }
 
+    //Returns a certain video from the list of all found videos
     public String GetMovieListMovie(int index)
     {
         return movieList[index].movie;
     }
 
+    //Sets the playback speed of the currently played video
     public void SetPlaybackSpeed(int mode)
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        if (mediaPlayer != null && playerParams != null)
+        //Check if the android media player is null
+        if (mediaPlayer != null)
         {
             //Set video playback to normal (mode 0)
             if (mode == 0)
             {
-                playerParams.Call("setSpeed", 1);
+                //Set the player parameters to normal speed
+                playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 1f);
+
+                //Set the android media player on normal speed
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
 
             //Set video playback to fast (mode 1)
             if (mode == 1)
             {
-                playerParams.Call("setSpeed", 2);
+                //Set the player parameters to fast speed
+                playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 2f);
+
+                //Set the android media player on fast speed
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
 
             //Set video playback to slow (mode 2)
             if (mode == 2)
             {
-                playerParams.Call("setSpeed", 0.5f);
+                //Set the player parameters to slow speed
+                playerParams = playerParams.Call<AndroidJavaObject>("setSpeed", 0.5f);
+
+                //Set the android media player on slow speed
                 mediaPlayer.Call("setPlaybackParams", playerParams);
             }
         }
 #else
+        //Check if the VideoPlayer is null
         if (vp != null)
         {
             //Set video playback to normal (mode 0)
@@ -503,42 +570,57 @@ public class MediaPlayer : MonoBehaviour
 #endif
     }
 
-    public void Rewind()
+    //Rewind the the currently active video to its beginning
+    public String Rewind()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+        //Check if the android media player is null
         if (mediaPlayer != null)
         {
             try
 			{
+                //Jump to the beginning of the video in the android media player
 				mediaPlayer.Call("seekTo", 0);
 			}
 			catch (Exception e)
 			{
 				Debug.Log("Failed to stop mediaPlayer with message " + e.Message);
 			}
+            return "Rewinded video";
         }
 #else
+        //Check if the VideoPlayer is null
         if (vp != null)
         {
+            //Stops the VideoPlayer
             vp.Stop();
+
+            //Check if the audio source script is null
             if (audioEmitter != null)
             {
+                //Stops the audio source script
                 audioEmitter.Stop();
             }
+            return "Rewinded video";
         }
 #endif
+        return "No player active";
     }
 
+    //Toggles the pause state of the currently active video
     public void SetPaused(bool wasPaused)
     {
         Debug.Log("SetPaused: " + wasPaused);
 #if (UNITY_ANDROID && !UNITY_EDITOR)
+        //Check if the android media player is null
 		if (mediaPlayer != null)
 		{
+            //Set the pausing variable to the new state
 			videoPaused = wasPaused;
 			try
 			{
-				mediaPlayer.Call((videoPaused) ? "pause" : "start");
+                //Set the new pausing state in the android media player
+				mediaPlayer.Call((!videoPaused) ? "pause" : "start");
 			}
 			catch (Exception e)
 			{
@@ -546,15 +628,22 @@ public class MediaPlayer : MonoBehaviour
 			}
 		}
 #else
+        //Check if the VideoPlayer is null
         if (vp != null)
         {
+            //Set the pausing variable to the new state
             videoPaused = wasPaused;
-            if (videoPaused)
+
+            //Check if the video player is already paused
+            if (!videoPaused)
             {
+                //Pauses the VideoPlayer
                 vp.Pause();
 
+                //Check if the audio source script is null
                 if (audioEmitter != null)
                 {
+                    //Pauses the audio source script
                     audioEmitter.Pause();
                 }
             }
@@ -576,6 +665,8 @@ public class MediaPlayer : MonoBehaviour
     void OnApplicationPause(bool appWasPaused)
     {
         Debug.Log("OnApplicationPause: " + appWasPaused);
+
+        //Check if the application lost focus in the platform
         if (appWasPaused)
         {
             videoPausedBeforeAppPause = videoPaused;
@@ -588,6 +679,8 @@ public class MediaPlayer : MonoBehaviour
         }
     }
 
+
+    //Destroys the android media player instance
     private void OnDestroy()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
@@ -627,6 +720,9 @@ public class MediaPlayer : MonoBehaviour
 			mediaPlayer.Call("prepare");
 			mediaPlayer.Call("setLooping", false);
 			mediaPlayer.Call("start");
+            playerParams = CreatePlayerParams(mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams"));
+
+            Debug.Log("Started mediaPlayer successfully");
 		}
 		catch (Exception e)
 		{
@@ -636,41 +732,44 @@ public class MediaPlayer : MonoBehaviour
 		return mediaPlayer;
 	}
 
-    AndroidJavaObject CreateMediaPlayerParams()
-    {
-        Debug.Log("PlayerParams: CreateMediaPlayerParams");
-        
-        if (mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams") != null)
+    /// <summary>
+	/// Set up the video player parameters.
+	/// </summary>
+    AndroidJavaObject CreatePlayerParams(AndroidJavaObject inputObject)
+	{
+        AndroidJavaObject playbackParams = null;
+
+        if (inputObject == null)
         {
-            AndroidJavaObject playerParams = mediaPlayer.Call<AndroidJavaObject>("getPlaybackParams");
+            //playbackParams = new AndroidJavaObject("android/media/PlaybackParams");
+            Debug.LogError("No PlaybackParams in mediaPlayer found");
         }
         else
         {
-            AndroidJavaObject playerParams = new AndroidJavaObject("android/media/PlaybackParams");
-
-            playerParams.Call("setAudioFallbackMode", 0);
-            playerParams.Call("setPitch", 1);
-            playerParams.Call("setSpeed", 1);
+            playbackParams = inputObject;
         }
 
-        return playerParams;
-    }
+        IntPtr getSpeedMethodId = AndroidJNI.GetMethodID(playbackParams.GetRawClass(),"getSpeed","()F");
+        jvalue[] parms = new jvalue[1];
+        parms[0] = new jvalue();
+        parms[0].f = 1f;
+        AndroidJNI.CallFloatMethod(playbackParams.GetRawObject(), getSpeedMethodId, parms);
 
-    class MediaPlayerEndListener : AndroidJavaProxy
-    {
-        public MediaPlayerEndListener() : base("android.media.MediaPlayer$OnCompletionListener") {}
+		try
+		{
+            playbackParams = playbackParams.Call<AndroidJavaObject>("setAudioFallbackMode", 0);
+			playbackParams = playbackParams.Call<AndroidJavaObject>("setPitch", 1f);
+			playbackParams = playbackParams.Call<AndroidJavaObject>("setSpeed", 1f);
 
-        void onCompletion(AndroidJavaObject mediaPlayer)
-        {
-            //Start the video player with the new video
-            updStr = StartVideo();
+            Debug.Log("Started playerParams successfully");
+		}
+		catch (Exception e)
+		{
+			Debug.Log("Failed to create playerParams with message " + e.Message);
+		}
 
-            if(updStr != null)
-            {
-                Debug.LogError("No valid video found");
-            }
-        }
-    }
+		return playbackParams;
+	}
 #endif
 
 #if (UNITY_ANDROID && !UNITY_EDITOR)
@@ -695,4 +794,17 @@ public class MediaPlayer : MonoBehaviour
 	[DllImport("OculusMediaSurface")]
 	private static extern void OVR_Media_Surface_SetTextureParms(int texWidth, int texHeight);
 #endif
+
+    //Shows text for certain time in world space
+    IEnumerator ShowTextForTest(String text)
+    {
+        //Start showing the input text on the VRMenu
+        vrMenu.GetComponent<Text>().text = text;
+
+        //Wait for a given time (Shows text during this period)
+        yield return new WaitForSecondsRealtime(1);
+
+        //Stop showing the input text on the VRMenu
+        vrMenu.GetComponent<Text>().text = "";
+    }
 }
