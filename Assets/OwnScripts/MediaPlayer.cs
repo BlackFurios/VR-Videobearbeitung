@@ -337,10 +337,10 @@ public class MediaPlayer : MonoBehaviour
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         //Check if video player is there
-        if (mediaPlayer != null) 
+        if (mediaPlayer != null && !videoPaused) 
         {
             //Check if the video player is playing and is at the end of the video
-            if (!videoPaused && GetCurrentPos().TotalMilliseconds == GetMovieLength().TotalMilliseconds - 1000)
+            if (GetMovieName() != String.Empty && GetCurrentPos().TotalMilliseconds == GetMovieLength().TotalMilliseconds - 1000)
             {
                 //Iterate through all videos
                 for (int i = 0; i < GetMovieList().Count; i++)
@@ -380,10 +380,10 @@ public class MediaPlayer : MonoBehaviour
         }
 #else
         //Check if video player is there
-        if (vp != null)
+        if (vp != null && !videoPaused)
         {
             //Check if the video player is playing and is at the end of the video
-            if (vp.isPlaying && GetCurrentPos().TotalSeconds == GetMovieLength().TotalSeconds - 1)
+            if (GetMovieName() != String.Empty && GetCurrentPos().TotalSeconds == GetMovieLength().TotalSeconds - 1)
             {
                 //Iterate through all videos
                 for (int i = 0; i < GetMovieList().Count; i++)
@@ -637,7 +637,6 @@ public class MediaPlayer : MonoBehaviour
             //Check if the video player is already paused
             if (videoPaused)
             {
-                Debug.Log("Pausieren");
                 //Pauses the VideoPlayer
                 vp.Pause();
 
