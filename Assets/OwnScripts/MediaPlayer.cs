@@ -620,7 +620,7 @@ public class MediaPlayer : MonoBehaviour
 			try
 			{
                 //Set the new pausing state in the android media player
-				mediaPlayer.Call((!videoPaused) ? "pause" : "start");
+				mediaPlayer.Call((videoPaused) ? "pause" : "start");
 			}
 			catch (Exception e)
 			{
@@ -635,8 +635,9 @@ public class MediaPlayer : MonoBehaviour
             videoPaused = wasPaused;
 
             //Check if the video player is already paused
-            if (!videoPaused)
+            if (videoPaused)
             {
+                Debug.Log("Pausieren");
                 //Pauses the VideoPlayer
                 vp.Pause();
 

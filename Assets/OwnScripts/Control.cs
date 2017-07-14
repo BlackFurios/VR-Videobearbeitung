@@ -39,10 +39,10 @@ public class Control : MonoBehaviour
 
     public class localId                                        //Struct for a highlight and its own local if (without next and prev parameters)
     {
-        public GameObject g;                                    //The highlight as gameObject
+        public ManageHighlights.Highlight g;                    //The highlight
         public String localID;                                  //The highlights localID
 
-        public localId(GameObject a, String b)                  //Constructor of the localID struct
+        public localId(ManageHighlights.Highlight a, String b)  //Constructor of the localID struct
         {
             g = a;
             localID = b;
@@ -51,10 +51,10 @@ public class Control : MonoBehaviour
 
     public class nextId                                         //Struct for a highlight and its next highlight as id
     {
-        public GameObject g;                                    //The highlight as gameObject
+        public ManageHighlights.Highlight g;                    //The highlight
         public String nextLocalID;                              //The highlights next highlight as its localID
 
-        public nextId(GameObject a, String b)                   //Constructor of the nextID struct
+        public nextId(ManageHighlights.Highlight a, String b)   //Constructor of the nextID struct
         {
             g = a;
             nextLocalID = b;
@@ -143,13 +143,21 @@ public class Control : MonoBehaviour
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
                 hit.transform.gameObject.name == "Highlight(Clone)")
             {
-                //Delete selected highlight
-                mh.DeleteItem(hit.transform.gameObject);
+                //Iterate through the list of all managed highlights
+                foreach (ManageHighlights.Highlight h in mh.GetList())
+                {
+                    if (hit.transform.gameObject == h.getRepresentation())
+                    {
+                        //Delete selected highlight
+                        mh.DeleteItem(h);
+                        break;
+                    }
+                }
             }
             else
             {
                 //Clear complete highlight list and delete all highlights at once
-                mh.ClearList();
+                mh.DeleteAllItems();
             }  
         }
 
@@ -184,7 +192,7 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Starts creation of the new highlight
-                mh.AddItem(hit.point, mp.GetCurrentPos(), "Cut", coords);
+                mh.AddItem(hit.point, coords, mp.GetCurrentPos(), "Cut");
             }
         }
 
@@ -410,13 +418,21 @@ public class Control : MonoBehaviour
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
                 hit.transform.gameObject.name == "Highlight(Clone)")
             {
-                //Delete selected highlight
-                mh.DeleteItem(hit.transform.gameObject);
+                //Iterate through the list of all managed highlights
+                foreach (ManageHighlights.Highlight h in mh.GetList())
+                {
+                    if (hit.transform.gameObject == h.getRepresentation())
+                    {
+                        //Delete selected highlight
+                        mh.DeleteItem(h);
+                        break;
+                    }
+                }
             }
             else
             {
                 //Clear complete highlight list and delete all highlights at once
-                mh.ClearList();
+                mh.DeleteAllItems();
             }  
         }
 
@@ -451,7 +467,7 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Starts creation of the new highlight
-                mh.AddItem(hit.point, mp.GetCurrentPos(), "Cut", coords);
+                mh.AddItem(hit.point, coords, mp.GetCurrentPos(), "Cut");
             }
         }
 
@@ -698,10 +714,10 @@ public class Control : MonoBehaviour
             sw.WriteLine();
 
             //List of all already checked highlights
-            List<GameObject> usedHl = new List<GameObject>();
+            List<ManageHighlights.Highlight> usedHl = new List<ManageHighlights.Highlight>();
 
             //The currently checked highlight
-            GameObject current;
+            ManageHighlights.Highlight current;
 
             //Line count
             int lineCnt = 1;
@@ -727,26 +743,26 @@ public class Control : MonoBehaviour
                 if (!usedHl.Contains(current))
                 {
                     //Get all highlight that are related to another (Determine a possible chain)
-                    List<GameObject> chain = mh.CreateItemChain(current);
+                    List<ManageHighlights.Highlight> chain = mh.CreateItemChain(current);
 
                     //Cheeck if it is a chain or a single highlight
                     if (chain.Count == 1)
                     {
                         //Set the source start point and source end point of the clip of the single highlight
-                        srcIN = current.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(2));
-                        srcOUT = current.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(2));
+                        srcIN = current.getTime().Subtract(TimeSpan.FromSeconds(2));
+                        srcOUT = current.getTime().Add(TimeSpan.FromSeconds(2));
 
                         //Set the type
-                        type = current.GetComponent<HighlightMemory>().getType();
+                        type = current.getType();
                     }
                     else
                     {
                         //Set the source start point and source end point of the clip of the chain
-                        srcIN = chain.First<GameObject>().GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(1));
-                        srcOUT = chain.Last<GameObject>().GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(1));
+                        srcIN = chain.First<ManageHighlights.Highlight>().getTime().Subtract(TimeSpan.FromSeconds(1));
+                        srcOUT = chain.Last<ManageHighlights.Highlight>().getTime().Add(TimeSpan.FromSeconds(1));
 
                         //Set the type
-                        type = chain.First<GameObject>().GetComponent<HighlightMemory>().getType();
+                        type = chain.First<ManageHighlights.Highlight>().getType();
                     }
 
                     //Set the end point of the clip
@@ -860,7 +876,7 @@ public class Control : MonoBehaviour
                             currentTime.Add(TimeSpan.FromMilliseconds(500));
 
                             //Spawn single highlight
-                            mh.AddItem(new Vector3(0,0,0), currentTime, parameters[2], new Vector2(0,0));
+                            mh.AddItem(new Vector3(0,0,0), new Vector2(0, 0), currentTime, parameters[2]);
                         }
                     }
 
@@ -880,12 +896,12 @@ public class Control : MonoBehaviour
     }
 
     //Returns the transition mode for the selected highlight/chain
-    int GetTransitionNumber(GameObject highlight)
+    int GetTransitionNumber(ManageHighlights.Highlight highlight)
     {
         int trans;
 
         //Define the type of highlight for the edl (3 types possible)
-        switch (highlight.GetComponent<HighlightMemory>().getType())
+        switch (highlight.getType())
         {
             //2 -> Wipe
             case "Wipe":
@@ -934,15 +950,15 @@ public class Control : MonoBehaviour
         if (mh.GetList().Count > 0)
         {
             //Write for each highlight a line of parameters in the save file
-            foreach (GameObject g in mh.GetList())
+            foreach (ManageHighlights.Highlight g in mh.GetList())
             {
                 String str = String.Empty;
 
                 //Construct a string from the highlight parameters
-                str += g.transform.position;
-                str += "|" + g.GetComponent<HighlightMemory>().getTime();
-                str += "|" + g.GetComponent<HighlightMemory>().getType();
-                str += "|" + g.GetComponent<HighlightMemory>().getTexPos();
+                str += g.getPos();
+                str += "|" + g.getTime();
+                str += "|" + g.getType();
+                str += "|" + g.getTexPos();
 
                 //Write the constructed string to the file
                 sw.WriteLine(str);
@@ -1008,7 +1024,7 @@ public class Control : MonoBehaviour
                 Vector2 texPos = ParseStringToVector2(shortLine);
                 
                 //Create the highlight from the string
-                mh.AddItem(pos, time, type, texPos);
+                mh.AddItem(pos, texPos, time, type);
             }
 
             //Show the user it finished the loading process

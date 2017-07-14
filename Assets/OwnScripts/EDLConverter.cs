@@ -5,18 +5,6 @@ using UnityEngine;
 
 public class EDLConverter : MonoBehaviour
 {
-    // Use this for initialization
-    void Start ()
-    {
-
-    }
-	
-	// Update is called once per frame
-	void Update ()
-    {
-		
-	}
-
     //Returns the parameters which can be extracted from the given edl line
     public String[] ConvertFromEdlLine(String[] words)
     {
