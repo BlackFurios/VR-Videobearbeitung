@@ -749,8 +749,8 @@ public class Control : MonoBehaviour
                     if (chain.Count == 1)
                     {
                         //Set the source start point and source end point of the clip of the single highlight
-                        srcIN = current.getTime().Subtract(TimeSpan.FromSeconds(2));
-                        srcOUT = current.getTime().Add(TimeSpan.FromSeconds(2));
+                        srcIN = current.getTime();
+                        srcOUT = current.getTime();
 
                         //Set the type
                         type = current.getType();
@@ -758,8 +758,8 @@ public class Control : MonoBehaviour
                     else
                     {
                         //Set the source start point and source end point of the clip of the chain
-                        srcIN = chain.First<ManageHighlights.Highlight>().getTime().Subtract(TimeSpan.FromSeconds(1));
-                        srcOUT = chain.Last<ManageHighlights.Highlight>().getTime().Add(TimeSpan.FromSeconds(1));
+                        srcIN = chain.First<ManageHighlights.Highlight>().getTime();
+                        srcOUT = chain.Last<ManageHighlights.Highlight>().getTime();
 
                         //Set the type
                         type = chain.First<ManageHighlights.Highlight>().getType();
@@ -954,13 +954,13 @@ public class Control : MonoBehaviour
             {
                 String str = String.Empty;
 
-                //Construct a string from the highlight parameters
+                //Construct a save string from the local highlight parameters
                 str += g.getPos();
                 str += "|" + g.getTime();
                 str += "|" + g.getType();
                 str += "|" + g.getTexPos();
 
-                //Write the constructed string to the file
+                //Write the constructed save string to the file
                 sw.WriteLine(str);
             }
 
@@ -1022,7 +1022,7 @@ public class Control : MonoBehaviour
 
                 //Extract the texture position part of the line string and parse it into a Vector2
                 Vector2 texPos = ParseStringToVector2(shortLine);
-                
+
                 //Create the highlight from the string
                 mh.AddItem(pos, texPos, time, type);
             }

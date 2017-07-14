@@ -6,41 +6,41 @@ using UnityEngine.UI;
 
 public class ManageHighlights : MonoBehaviour
 {
-    private MediaPlayer             mp;                                                     //Instance of the MediaPlayer script
-    private SaveData                sd;                                                     //Instance of the SaveData script
+    private MediaPlayer             mp;                                                         //Instance of the MediaPlayer script
+    private SaveData                sd;                                                         //Instance of the SaveData script
 
-    private Canvas                  vrMenu;                                                 //Instance of the VRMenu object
+    private Canvas                  vrMenu;                                                     //Instance of the VRMenu object
 
-    private List<Highlight>         hList = new List<Highlight>();                          //List of all managed highlights
+    private List<Highlight>         hList = new List<Highlight>();                              //List of all managed highlights
 
     [SerializeField]
-    private  GameObject             highLight;                                              //Highlight prefab to be managed
+    private  GameObject             highLight;                                                  //Highlight prefab to be managed
 
-    private TimeSpan                lastSpawn = TimeSpan.Zero;                              //The time of the last spawned highlight
+    private TimeSpan                lastSpawn = TimeSpan.Zero;                                  //The time of the last spawned highlight
     
-    private float                   timeRange = 0.5f;                                       //The time range in which this highlight should be shown in the UI (x2 in video)
+    private float                   timeRange = 0.5f;                                           //The time range in which this highlight should be shown in the UI (x2 in video)
 
-    private Vector3                 impPos = new Vector3(0,0,0);                            //Fixed position for all from an edl file imported highlights
+    private Vector3                 impPos = new Vector3(0,0,0);                                //Fixed position for all from an edl file imported highlights
 
-    private bool                    textShown = false;                                      //Is currently a text shown
-    private int                     showTime = 1;                                           //How long texts should be shown in seconds
+    private bool                    textShown = false;                                          //Is currently a text shown
+    private int                     showTime = 1;                                               //How long texts should be shown in seconds
 
     public class Highlight
     {
-        private Vector3     pos;                                                            //The world position of the gameObject of the highlight
-        private Vector2     texPos;                                                         //The texture position of the highlight
-        private TimeSpan    time;                                                           //The time position of the highlight
-        private String      type;                                                           //The type of the highlight
-        private GameObject  highlight;                                                      //The gameObject representation of the highlight
+        private Vector3     pos;                                                                //The world position of the gameObject of the highlight
+        private Vector2     texPos;                                                             //The texture position of the highlight
+        private TimeSpan    time;                                                               //The time position of the highlight
+        private String      type;                                                               //The type of the highlight
+        private GameObject  highlight;                                                          //The gameObject representation of the highlight
 
-        public Highlight(Vector3 val1, Vector2 val2, TimeSpan val3,
-            String val4, GameObject val5)                                                   //Constructor of the Highlight class
+        public Highlight(Vector3 initPos, Vector2 initTexPos, TimeSpan initTime,
+            String initType, GameObject initHighlight)                                          //Constructor of the Highlight class
         {
-            pos = val1;
-            texPos = val2;
-            time = val3;
-            type = val4;
-            highlight = val5;
+            pos = initPos;
+            texPos = initTexPos;
+            time = initTime;
+            type = initType;
+            highlight = initHighlight;
 
         }
 
@@ -68,13 +68,13 @@ public class ManageHighlights : MonoBehaviour
             return type;
         }
 
-        //Returns the type of the highlight
+        //Returns the representation of the highlight
         public GameObject getRepresentation()
         {
             return highlight;
         }
 
-        //Returns the type of the highlight
+        //Sets the representation of the highlight
         public void setRepresentation(GameObject val)
         {
             highlight = val;
@@ -144,7 +144,7 @@ public class ManageHighlights : MonoBehaviour
     //Public function to create and add new highlight to video
     public void AddItem(Vector3 pos, Vector2 texPos, TimeSpan ts, String type)
     {
-        if (ts.Subtract(lastSpawn) >= TimeSpan.FromMilliseconds(10))
+        if (ts.Subtract(lastSpawn) >= TimeSpan.FromMilliseconds(250))
         {
             //Set current to the newly spawned highlight object
             Highlight current = new Highlight(pos, texPos, ts, type, null);
@@ -252,10 +252,10 @@ public class ManageHighlights : MonoBehaviour
         Highlight prev = getTimelyPrevItem(active);
 
         //Check if the the active highlight even has a previous chain item
-        if (prev != null && active.getTime().Subtract(prev.getTime()).TotalMilliseconds <= 2000)
+        if (prev != null && active.getTime().Subtract(prev.getTime()).TotalMilliseconds < 300)
         {
             //Search for the first highlight of the found chain
-            while (prev != null && active.getTime().Subtract(prev.getTime()).TotalMilliseconds <= 2000)
+            while (prev != null && active.getTime().Subtract(prev.getTime()).TotalMilliseconds < 300)
             {
                 //Make the new first highlight the previous highlight of the old first highlight
                 prev = getTimelyPrevItem(prev);
@@ -272,10 +272,10 @@ public class ManageHighlights : MonoBehaviour
         Highlight next = getTimelyNextItem(active);
 
         //Check if the the active highlight even has a next chain item
-        if (next != null && next.getTime().Subtract(active.getTime()).TotalMilliseconds <= 1000)
+        if (next != null && next.getTime().Subtract(active.getTime()).TotalMilliseconds < 300)
         {
             //Search for the last highlight of the found chain
-            while (next != null && next.getTime().Subtract(active.getTime()).TotalMilliseconds <= 1000)
+            while (next != null && next.getTime().Subtract(active.getTime()).TotalMilliseconds < 300)
             {
                 //Make the new last highlight the next highlight of the old last highlight
                 next = getTimelyNextItem(next);
@@ -333,32 +333,6 @@ public class ManageHighlights : MonoBehaviour
             if (difference.TotalMilliseconds < minDif.TotalMilliseconds && difference > TimeSpan.Zero)
             {
                 //Set the new difference as new shortest time difference
-                minDif = difference;
-
-                //Define the currently checked highlight as new next highlight to return
-                output = current;
-            }
-        }
-
-        return output;
-    }
-
-    //Returns the position next highlight of the given highlight
-    public Highlight getPosNextItem(Highlight active)
-    {
-        Highlight output = null;
-        float minDif = float.MaxValue;
-
-        //Iterate through all highlights
-        foreach (Highlight current in GetList())
-        {
-            //Get the time difference between the given and the currently checked highlight
-            float difference = Vector2.Distance(active.getTexPos(), current.getTexPos());
-
-            //Check if the new difference is shorter than the currently shortest position difference
-            if (difference <= minDif)
-            {
-                //Set the new difference as new shortest position difference
                 minDif = difference;
 
                 //Define the currently checked highlight as new next highlight to return
