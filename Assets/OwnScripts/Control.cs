@@ -10,39 +10,43 @@ using UnityEngine.UI;
 
 public class Control : MonoBehaviour
 {
-    private ManageHighlights mh;                                //Instance of the ManageHighlights script
-    private MediaPlayer mp;                                     //Instance of the MediaPlayer script
-    private EDLConverter ec;                                    //Instance of the EDLConverter script
+    private ManageHighlights mh;                                    //Instance of the ManageHighlights script
+    private MediaPlayer mp;                                         //Instance of the MediaPlayer script
+    private EDLConverter ec;                                        //Instance of the EDLConverter script
 
-    private Dropdown list;                                      //Instance of the dropdown list object
+    private Dropdown list;                                          //Instance of the dropdown list object
 
-    private Canvas vrMenu;                                      //Instance of the VRMenu object
-    private Canvas stMenu;                                      //Instance of the StartMenu object
+    private Canvas vrMenu;                                          //Instance of the VRMenu object
+    private Canvas stMenu;                                          //Instance of the StartMenu object
 
-    private RaycastHit hit;                                     //Point where the raycast hits
-    private int layerMask = 1 << 8;                             //LayerMask with layer of the highlights
+    private RaycastHit hit;                                         //Point where the raycast hits
+    private int layerMask = 1 << 8;                                 //LayerMask with layer of the highlights
     
-    private int selectedIndex;                                  //Dropdown index which the user has selected
+    private int selectedIndex;                                      //Dropdown index which the user has selected
 
-    private List<String> videoList = new List<string>();        //List of currently possible movies
-    
-    private bool opened = false;                                //Is the drodown list opened
-    private bool pausing = false;                               //Is the video currently paused
-    private bool timeShown = false;                             //Is currently a text shown
-    private int showTime = 1;                                   //How long texts should be shown in seconds
+    private List<String> videoList = new List<string>();            //List of currently possible movies
 
-    private float delTimer;                                     //Timer for long button press on X-Button
-    private float saveTimer;                                    //Timer for long button press on L2-Button
+    private List<Vector3> spawnPosList = new List<Vector3>();       //
+    private List<Vector2> spawnTexPosList = new List<Vector2>();    //
+    private List<TimeSpan> spawnTimeList = new List<TimeSpan>();    //
 
-    private String savePath;                                    //Absolute path of the save files
-    private String edlPath;                                     //Absolute path of the edl files
+    private bool opened = false;                                    //Is the drodown list opened
+    private bool pausing = false;                                   //Is the video currently paused
+    private bool timeShown = false;                                 //Is currently a text shown
+    private int showTime = 1;                                       //How long texts should be shown in seconds
 
-    public class localId                                        //Struct for a highlight and its own local if (without next and prev parameters)
+    private float delTimer;                                         //Timer for long button press on X-Button
+    private float saveTimer;                                        //Timer for long button press on L2-Button
+
+    private String savePath;                                        //Absolute path of the save files
+    private String edlPath;                                         //Absolute path of the edl files
+
+    public class localId                                            //Struct for a highlight and its own local if (without next and prev parameters)
     {
-        public ManageHighlights.Highlight g;                    //The highlight
-        public String localID;                                  //The highlights localID
+        public ManageHighlights.Highlight g;                        //The highlight
+        public String localID;                                      //The highlights localID
 
-        public localId(ManageHighlights.Highlight a, String b)  //Constructor of the localID struct
+        public localId(ManageHighlights.Highlight a, String b)      //Constructor of the localID struct
         {
             g = a;
             localID = b;
@@ -146,7 +150,8 @@ public class Control : MonoBehaviour
                 //Iterate through the list of all managed highlights
                 foreach (ManageHighlights.Highlight h in mh.GetList())
                 {
-                    if (hit.transform.gameObject == h.getRepresentation())
+                    //Check for the currently selected highlight in the list of all managed highlights
+                    if (h.getPos().Contains(hit.transform.position) && h.getTime().Contains(mp.GetCurrentPos()))
                     {
                         //Delete selected highlight
                         mh.DeleteItem(h);
@@ -158,7 +163,7 @@ public class Control : MonoBehaviour
             {
                 //Clear complete highlight list and delete all highlights at once
                 mh.DeleteAllItems();
-            }  
+            } 
         }
 
         //Check if the Y-Button is pressed
@@ -191,9 +196,18 @@ public class Control : MonoBehaviour
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
-                //Starts creation of the new highlight
-                mh.AddItem(hit.point, coords, mp.GetCurrentPos(), "Cut");
+                //Add new parameters to spawn lists
+                spawnPosList.Add(hit.transform.position);
+                spawnTexPosList.Add(coords);
+                spawnTimeList.Add(mp.GetCurrentPos());
             }
+        }
+
+        //Check if the R1-Button not pressed anymore
+        if (Input.GetButtonUp("R1-Android"))
+        {
+            //Create highlight
+            mh.AddItem(spawnPosList, spawnTexPosList, spawnTimeList, "Cut");
         }
 
         //Check if the L1-Button is pressed
@@ -421,7 +435,8 @@ public class Control : MonoBehaviour
                 //Iterate through the list of all managed highlights
                 foreach (ManageHighlights.Highlight h in mh.GetList())
                 {
-                    if (hit.transform.gameObject == h.getRepresentation())
+                    //Check for the currently selected highlight in the list of all managed highlights
+                    if (h.getPos().Contains(hit.transform.position) && h.getTime().Contains(mp.GetCurrentPos()))
                     {
                         //Delete selected highlight
                         mh.DeleteItem(h);
@@ -466,9 +481,18 @@ public class Control : MonoBehaviour
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
-                //Starts creation of the new highlight
-                mh.AddItem(hit.point, coords, mp.GetCurrentPos(), "Cut");
+                //Add new parameters to spawn lists
+                spawnPosList.Add(hit.transform.position);
+                spawnTexPosList.Add(coords);
+                spawnTimeList.Add(mp.GetCurrentPos());
             }
+        }
+
+        //Check if the R1-Button not pressed anymore
+        if (Input.GetButtonUp("R1-Windows"))
+        {
+            //Create highlight
+            mh.AddItem(spawnPosList, spawnTexPosList, spawnTimeList, "Cut");
         }
 
         //Check if the L1-Button is pressed
@@ -713,14 +737,8 @@ public class Control : MonoBehaviour
             sw.WriteLine("FCM: NON-DROP FRAME");
             sw.WriteLine();
 
-            //List of all already checked highlights
-            List<ManageHighlights.Highlight> usedHl = new List<ManageHighlights.Highlight>();
-
             //The currently checked highlight
             ManageHighlights.Highlight current;
-
-            //Line count
-            int lineCnt = 1;
 
             //The type of the highlight (Cut, Dissolve, Wipe)
             String type;
@@ -734,54 +752,28 @@ public class Control : MonoBehaviour
             TimeSpan recOUT = TimeSpan.Zero;
 
             //Iterate through all spawned highlights
-            for (int i = 0; i < mh.GetList().Count; i++)
+            for (int i = 1; i <= mh.GetList().Count; i++)
             {
                 //Set the currently checked item as the current item of the list of highlights
-                current = mh.GetItem(i);
+                current = mh.GetItem(i - 1);
 
-                //Check if the currently checked highlight is not used already
-                if (!usedHl.Contains(current))
-                {
-                    //Get all highlight that are related to another (Determine a possible chain)
-                    List<ManageHighlights.Highlight> chain = mh.CreateItemChain(current);
+                //Set the source start point and source end point of the clip of the single highlight
+                srcIN = current.getTime().First<TimeSpan>();
+                srcOUT = current.getTime().Last<TimeSpan>();
 
-                    //Cheeck if it is a chain or a single highlight
-                    if (chain.Count == 1)
-                    {
-                        //Set the source start point and source end point of the clip of the single highlight
-                        srcIN = current.getTime();
-                        srcOUT = current.getTime();
+                //Set the type
+                type = current.getType();
 
-                        //Set the type
-                        type = current.getType();
-                    }
-                    else
-                    {
-                        //Set the source start point and source end point of the clip of the chain
-                        srcIN = chain.First<ManageHighlights.Highlight>().getTime();
-                        srcOUT = chain.Last<ManageHighlights.Highlight>().getTime();
+                //Set the end point of the clip
+                recOUT += srcOUT.Subtract(srcIN);
 
-                        //Set the type
-                        type = chain.First<ManageHighlights.Highlight>().getType();
-                    }
+                //Convert the given parameters to a complete edl line
+                sw.WriteLine(ec.ConvertToEdlLine(i, 0, type, srcIN, srcOUT, recIN, recOUT));
+                sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
+                sw.WriteLine();
 
-                    //Set the end point of the clip
-                    recOUT += srcOUT.Subtract(srcIN);
-
-                    //Add the recently used highlights to the used highlights list
-                    usedHl.AddRange(chain);
-
-                    //Convert the given parameters to a complete edl line
-                    sw.WriteLine(ec.ConvertToEdlLine(lineCnt, 0, type, srcIN, srcOUT, recIN, recOUT));
-                    sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
-                    sw.WriteLine();
-
-                    //Set the start point of the new clip at the end of the last clip
-                    recIN += recOUT.Subtract(recIN);
-
-                    //Increase the line count
-                    lineCnt += 1;
-                }
+                //Set the start point of the new clip at the end of the last clip
+                recIN += recOUT.Subtract(recIN);
             }
 
             //Close the streamwriter
@@ -834,6 +826,8 @@ public class Control : MonoBehaviour
                     //The extracted parameters of the analysed edl line (transition, mode, srcIN, srcOUT, etc)
                     String[] parameters = new String[5];
 
+                    List<TimeSpan> hlTime = new List<TimeSpan>();
+
                     //Iterate through the body
                     foreach (String str in body)
                     {
@@ -869,16 +863,22 @@ public class Control : MonoBehaviour
                         //Set currentTime to the start time of the highlight/chain
                         TimeSpan currentTime = TimeSpan.Parse(parameters[3]);
 
+                        //Add the next time position to the list of all time positions of the highlight
+                        hlTime.Add(currentTime);
+
                         //While the line has not ended spawn new highlights
                         while(currentTime < TimeSpan.Parse(parameters[4]))
                         {
                             //Set currentTime to the next time position (currentTime + 0.5 seconds)
                             currentTime.Add(TimeSpan.FromMilliseconds(500));
 
-                            //Spawn single highlight
-                            mh.AddItem(new Vector3(0,0,0), new Vector2(0, 0), currentTime, parameters[2]);
+                            //Add the next time position to the list of all time positions of the highlight
+                            hlTime.Add(currentTime);
                         }
                     }
+
+                    //Create a highlight from the parameters
+                    mh.AddItem(new List<Vector3>(), new List<Vector2>(), hlTime, parameters[2]);
 
                     //Clear the complete body after creating the necessary highlights
                     body.Clear();
@@ -954,11 +954,41 @@ public class Control : MonoBehaviour
             {
                 String str = String.Empty;
 
-                //Construct a save string from the local highlight parameters
-                str += g.getPos();
-                str += "|" + g.getTime();
+                //Iterate through all world positions in the world position list of the highlight
+                foreach (Vector3 pos in g.getPos())
+                {
+                    //Add the current world position to the save string
+                    str += pos + ";";
+                }
+                //Delete last semicolon of the list
+                str.Remove(str.Length - 1);
+
+                //Add a pipe as separation mark
+                str += "|";
+
+                //Iterate through all texture positions in the texture position list of the highlight
+                foreach (Vector2 texPos in g.getTexPos())
+                {
+                    //Add the current texture position to the save string
+                    str += texPos + ";";
+                }
+                //Delete last semicolon of the list
+                str.Remove(str.Length - 1);
+
+                //Add a pipe as separation mark
+                str += "|";
+
+                //Iterate through all time positions in the time position list of the highlight
+                foreach (TimeSpan time in g.getTime())
+                {
+                    //Add the current time position to the save string
+                    str += time + ";";
+                }
+                //Delete last semicolon of the list
+                str.Remove(str.Length - 1);
+
+                //Add a pipe as separation mark
                 str += "|" + g.getType();
-                str += "|" + g.getTexPos();
 
                 //Write the constructed save string to the file
                 sw.WriteLine(str);
@@ -1003,28 +1033,33 @@ public class Control : MonoBehaviour
                 String shortLine = line;
 
                 //Extract the world position part of the line string
-                String posStr = shortLine.Substring(0, shortLine.IndexOf("|"));
+                String posListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
                 //Parse the world possition string into a Vector3
-                Vector3 pos = ParseStringToVector3(posStr);
+                List<Vector3> posList = ParseStringToVector3List(posListStr);
 
-                //Extract the time part of the line string
-                String timeStr = shortLine.Substring(0, shortLine.IndexOf("|"));
-                shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
-
-                //Parse the time string into a TimeSpan
-                TimeSpan time = TimeSpan.Parse(timeStr);
-
-                //Extract the type part of the line string
-                String type = shortLine.Substring(0, shortLine.IndexOf("|"));
+                //Extract the texture position part of the line string
+                String texPosListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
                 //Extract the texture position part of the line string and parse it into a Vector2
-                Vector2 texPos = ParseStringToVector2(shortLine);
+                List<Vector2> texPosList = ParseStringToVector2List(texPosListStr);
+
+                //Extract the time part of the line string
+                String timeListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
+                shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
+
+                //Parse the time string into a TimeSpan
+                List<TimeSpan> timeList = ParseStringToTimeSpanList(timeListStr);
+
+                //Extract the type part of the line string
+                String type = shortLine;
+
+                
 
                 //Create the highlight from the string
-                mh.AddItem(pos, texPos, time, type);
+                mh.AddItem(posList, texPosList, timeList, type);
             }
 
             //Show the user it finished the loading process
@@ -1033,39 +1068,78 @@ public class Control : MonoBehaviour
     }
 
     //Parses a given string to a Vector2
-    Vector2 ParseStringToVector2(String str)
+    List<Vector2> ParseStringToVector2List(String str)
     {
-        //Check if the vector string is in brackets
-        if (str.StartsWith("(") && str.EndsWith(")"))
+        List<Vector2> result = new List<Vector2>();
+
+        //Split the String in its single position items
+        String[] texPosList = str.Split(';');
+
+        //Iterate through all found vector items in the list
+        foreach (String item in texPosList)
         {
-            //Delete both brackets from the end and the start of the string
-            str = str.Substring(1, str.Length-2);
+            String texPos = item;
+
+            //Check if the vector string is in brackets
+            if (texPos.StartsWith("(") && texPos.EndsWith(")"))
+            {
+                //Delete both brackets from the end and the start of the string
+                texPos = texPos.Substring(1, texPos.Length - 2);
+            }
+
+            //Split the position string into the x and the y coordinate
+            String[] array = texPos.Split(',');
+
+            //Create the Vector2 from both coordinate strings
+            result.Add(new Vector2(float.Parse(array[0]), float.Parse(array[1])));
         }
-
-        //Split the position string into the x and the y coordinate
-        String[] array = str.Split(',');
-
-        //Create the Vector2 from both coordinate strings
-        Vector2 result = new Vector2(float.Parse(array[0]), float.Parse(array[1]));
 
         return result;
     }
 
     //Parses a given string to a Vector3
-    Vector3 ParseStringToVector3(String str)
+    List<Vector3> ParseStringToVector3List(String str)
     {
-        //Check if the vector string is in brackets
-        if (str.StartsWith("(") && str.EndsWith(")"))
+        List<Vector3> result = new List<Vector3>();
+
+        //Split the String in its single position items
+        String[] posList = str.Split(';');
+
+        //Iterate through all found vector items in the list
+        foreach (String item in posList)
         {
-            //Delete both brackets from the end and the start of the string
-            str = str.Substring(1, str.Length-2);
+            String pos = item;
+
+            //Check if the vector string is in brackets
+            if (pos.StartsWith("(") && pos.EndsWith(")"))
+            {
+                //Delete both brackets from the end and the start of the string
+                pos = pos.Substring(1, pos.Length - 2);
+            }
+
+            //Split the position string into the x and the y coordinate
+            String[] array = pos.Split(',');
+
+            //Create the Vector2 from both coordinate strings
+            result.Add(new Vector2(float.Parse(array[0]), float.Parse(array[1])));
         }
 
-        //Split the position string into the x, y and z coordinate
-        String[] array = str.Split(',');
+        return result;
+    }
 
-        //Create the Vector§ from all three coordinate strings
-        Vector3 result = new Vector3(float.Parse(array[0]), float.Parse(array[1]), float.Parse(array[2]));
+    List<TimeSpan> ParseStringToTimeSpanList(String str)
+    {
+        List<TimeSpan> result = new List<TimeSpan>();
+
+        //Split the String in its single position items
+        String[] timeList = str.Split(';');
+
+        //Iterate through all found vector items in the list
+        foreach (String item in timeList)
+        {
+            //Create the TimeSpan from the string
+            result.Add(TimeSpan.Parse(item));
+        }
 
         return result;
     }
