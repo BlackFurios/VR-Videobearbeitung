@@ -23,20 +23,19 @@ public class ManageHighlights : MonoBehaviour
 
     public class Highlight
     {
-        private List<Vector3>       pos;                                        //List of all world positions of the highlight
-        private List<Vector2>       texPos;                                     //List of all texture positions of the highlight
-        private List<TimeSpan>      time;                                       //List of all time positions of the highlight
+        private List<Vector3>       pos = new List<Vector3>();                  //List of all world positions of the highlight
+        private List<Vector2>       texPos = new List<Vector2>();               //List of all texture positions of the highlight
+        private List<TimeSpan>      time = new List<TimeSpan>();                //List of all time positions of the highlight
         private String              type;                                       //The type of the highlight
         private GameObject          obj;                                        //The gameObject which is shown if one has to be shown
 
         public Highlight(List<Vector3> initPos, List<Vector2> initTexPos,
             List<TimeSpan> initTime, String initType)                           //Constructor of the Highlight class
         {
-            pos = initPos;
-            texPos = initTexPos;
-            time = initTime;
+            pos = initPos.ToList();
+            texPos = initTexPos.ToList();
+            time = initTime.ToList();
             type = initType;
-
         }
 
         //Returns the world position of the highlight
@@ -99,7 +98,8 @@ public class ManageHighlights : MonoBehaviour
         foreach (Highlight h in hList)
         {
             //Check if the highlight should be shown
-            if (mp.GetCurrentPos() >= h.getTime().First<TimeSpan>() && mp.GetCurrentPos() <= h.getTime().Last<TimeSpan>())
+            if (mp.GetCurrentPos().TotalMilliseconds >= h.getTime().First<TimeSpan>().TotalMilliseconds &&
+                mp.GetCurrentPos().TotalMilliseconds <= h.getTime().Last<TimeSpan>().TotalMilliseconds)
             {
                 //Check if the highlight goes to a next step in its chain
                 if (h.getTime().Contains(mp.GetCurrentPos()))
@@ -108,16 +108,11 @@ public class ManageHighlights : MonoBehaviour
                     for (int i = 0; i < h.getTime().Count; i++)
                     {
                         //Check for the current time position and if there is already a gameObject
-                        if (mp.GetCurrentPos() == h.getTime()[i] && h.getObject() != null)
+                        if (h.getObject() != null)
                         {
                             //Set the object variable to null to safely destroy the gameObject
-                            h.setObject(null);
-
-                            //Delete the gameObject
-                            Destroy(h.getObject(), hlShowTime);
-
-                            //Spawn a new gameObject and set the variable obj with it
-                            h.setObject(SpawnHighlight(h.getPos()[i]));
+                            h.getObject().transform.position = CalculateHighlightPosition(h.getPos()[i]);
+                            h.getObject().transform.rotation = CalculateHighlightRotation();
                         }
                         else
                         {
@@ -152,20 +147,30 @@ public class ManageHighlights : MonoBehaviour
     //Spawns highlight with if no oher highlight collides with it
     GameObject SpawnHighlight(Vector3 pos)
     {
+        //Spawn the highlight
+        return Instantiate(highLight, CalculateHighlightPosition(pos), CalculateHighlightRotation());
+    }
+
+    Vector3 CalculateHighlightPosition(Vector3 pos)
+    {
         //Calculate the position of this highlight
         Vector3 spawnPos = pos - Camera.main.transform.position;
         spawnPos.x = spawnPos.x * 0.9f;
         spawnPos.y = spawnPos.y * 0.9f;
         spawnPos.z = spawnPos.z * 0.9f;
 
+        return spawnPos;
+    }
+
+    Quaternion CalculateHighlightRotation()
+    {
         //Calculate the Rotation of this highlight
         Quaternion spawnRot = Quaternion.Euler(Camera.main.transform.eulerAngles);
         var eulRot = spawnRot.eulerAngles;
         eulRot.x = eulRot.x + 90;
         spawnRot.eulerAngles = eulRot;
 
-        //Spawn the highlight
-        return Instantiate(highLight, spawnPos, spawnRot);
+        return spawnRot;
     }
 
     //Returns the index of the given highlight

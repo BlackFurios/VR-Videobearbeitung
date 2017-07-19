@@ -10,55 +10,55 @@ using UnityEngine.UI;
 
 public class Control : MonoBehaviour
 {
-    private ManageHighlights mh;                                    //Instance of the ManageHighlights script
-    private MediaPlayer mp;                                         //Instance of the MediaPlayer script
-    private EDLConverter ec;                                        //Instance of the EDLConverter script
+    private ManageHighlights    mh;                                     //Instance of the ManageHighlights script
+    private MediaPlayer         mp;                                     //Instance of the MediaPlayer script
+    private EDLConverter        ec;                                     //Instance of the EDLConverter script
 
-    private Dropdown list;                                          //Instance of the dropdown list object
+    private Dropdown            list;                                   //Instance of the dropdown list object
 
-    private Canvas vrMenu;                                          //Instance of the VRMenu object
-    private Canvas stMenu;                                          //Instance of the StartMenu object
+    private Canvas              vrMenu;                                 //Instance of the VRMenu object
+    private Canvas              stMenu;                                 //Instance of the StartMenu object
 
-    private RaycastHit hit;                                         //Point where the raycast hits
-    private int layerMask = 1 << 8;                                 //LayerMask with layer of the highlights
+    private RaycastHit          hit;                                    //Point where the raycast hits
+    private int                 layerMask = 1 << 8;                     //LayerMask with layer of the highlights
     
-    private int selectedIndex;                                      //Dropdown index which the user has selected
+    private int                 selectedIndex;                          //Dropdown index which the user has selected
 
-    private List<String> videoList = new List<string>();            //List of currently possible movies
+    private List<String>        videoList = new List<string>();         //List of currently possible movies
 
-    private List<Vector3> spawnPosList = new List<Vector3>();       //
-    private List<Vector2> spawnTexPosList = new List<Vector2>();    //
-    private List<TimeSpan> spawnTimeList = new List<TimeSpan>();    //
+    private List<Vector3>       spawnPosList = new List<Vector3>();     //
+    private List<Vector2>       spawnTexPosList = new List<Vector2>();  //
+    private List<TimeSpan>      spawnTimeList = new List<TimeSpan>();   //
 
-    private bool opened = false;                                    //Is the drodown list opened
-    private bool pausing = false;                                   //Is the video currently paused
-    private bool timeShown = false;                                 //Is currently a text shown
-    private int showTime = 1;                                       //How long texts should be shown in seconds
+    private bool                opened = false;                         //Is the drodown list opened
+    private bool                pausing = false;                        //Is the video currently paused
+    private bool                timeShown = false;                      //Is currently a text shown
+    private int                 showTime = 1;                           //How long texts should be shown in seconds
 
-    private float delTimer;                                         //Timer for long button press on X-Button
-    private float saveTimer;                                        //Timer for long button press on L2-Button
+    private float               delTimer;                               //Timer for long button press on X-Button
+    private float               saveTimer;                              //Timer for long button press on L2-Button
 
-    private String savePath;                                        //Absolute path of the save files
-    private String edlPath;                                         //Absolute path of the edl files
+    private String              savePath;                               //Absolute path of the save files
+    private String              edlPath;                                //Absolute path of the edl files
 
-    public class localId                                            //Struct for a highlight and its own local if (without next and prev parameters)
+    public class localId                                                //Struct for a highlight and its own local if (without next and prev parameters)
     {
-        public ManageHighlights.Highlight g;                        //The highlight
-        public String localID;                                      //The highlights localID
+        public ManageHighlights.Highlight g;                            //The highlight
+        public String localID;                                          //The highlights localID
 
-        public localId(ManageHighlights.Highlight a, String b)      //Constructor of the localID struct
+        public localId(ManageHighlights.Highlight a, String b)          //Constructor of the localID struct
         {
             g = a;
             localID = b;
         }
     }
 
-    public class nextId                                         //Struct for a highlight and its next highlight as id
+    public class nextId                                                 //Struct for a highlight and its next highlight as id
     {
-        public ManageHighlights.Highlight g;                    //The highlight
-        public String nextLocalID;                              //The highlights next highlight as its localID
+        public ManageHighlights.Highlight g;                            //The highlight
+        public String nextLocalID;                                      //The highlights next highlight as its localID
 
-        public nextId(ManageHighlights.Highlight a, String b)   //Constructor of the nextID struct
+        public nextId(ManageHighlights.Highlight a, String b)           //Constructor of the nextID struct
         {
             g = a;
             nextLocalID = b;
@@ -186,7 +186,8 @@ public class Control : MonoBehaviour
         if (Input.GetButton("R1-Android"))
         {
             //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name != "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name != "Highlight(Clone)")
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -197,7 +198,7 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Add new parameters to spawn lists
-                spawnPosList.Add(hit.transform.position);
+                spawnPosList.Add(hit.point);
                 spawnTexPosList.Add(coords);
                 spawnTimeList.Add(mp.GetCurrentPos());
             }
@@ -208,6 +209,14 @@ public class Control : MonoBehaviour
         {
             //Create highlight
             mh.AddItem(spawnPosList, spawnTexPosList, spawnTimeList, "Cut");
+
+            //Empty all spawn parameter lists
+            spawnPosList.Clear();
+            spawnTexPosList.Clear();
+            spawnTimeList.Clear();
+
+            //Notify user that a highlight was created
+            StartCoroutine(ShowTextForTime("Highlight created"));
         }
 
         //Check if the L1-Button is pressed
@@ -471,7 +480,8 @@ public class Control : MonoBehaviour
         if (Input.GetButton("R1-Windows"))
         {
             //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name != "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name != "Highlight(Clone)")
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -482,17 +492,25 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Add new parameters to spawn lists
-                spawnPosList.Add(hit.transform.position);
+                spawnPosList.Add(hit.point);
                 spawnTexPosList.Add(coords);
                 spawnTimeList.Add(mp.GetCurrentPos());
             }
         }
 
         //Check if the R1-Button not pressed anymore
-        if (Input.GetButtonUp("R1-Windows"))
+        if (Input.GetButtonUp("R1-Windows") && spawnPosList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
         {
             //Create highlight
             mh.AddItem(spawnPosList, spawnTexPosList, spawnTimeList, "Cut");
+
+            //Empty all spawn parameter lists
+            spawnPosList.Clear();
+            spawnTexPosList.Clear();
+            spawnTimeList.Clear();
+
+            //Notify user that a highlight was created
+            StartCoroutine(ShowTextForTime("Highlight created"));
         }
 
         //Check if the L1-Button is pressed
@@ -952,7 +970,7 @@ public class Control : MonoBehaviour
             //Write for each highlight a line of parameters in the save file
             foreach (ManageHighlights.Highlight g in mh.GetList())
             {
-                String str = String.Empty;
+                String str = "";
 
                 //Iterate through all world positions in the world position list of the highlight
                 foreach (Vector3 pos in g.getPos())
@@ -961,7 +979,7 @@ public class Control : MonoBehaviour
                     str += pos + ";";
                 }
                 //Delete last semicolon of the list
-                str.Remove(str.Length - 1);
+                str = str.Remove(str.Length - 1);
 
                 //Add a pipe as separation mark
                 str += "|";
@@ -973,7 +991,7 @@ public class Control : MonoBehaviour
                     str += texPos + ";";
                 }
                 //Delete last semicolon of the list
-                str.Remove(str.Length - 1);
+                str = str.Remove(str.Length - 1);
 
                 //Add a pipe as separation mark
                 str += "|";
@@ -985,7 +1003,7 @@ public class Control : MonoBehaviour
                     str += time + ";";
                 }
                 //Delete last semicolon of the list
-                str.Remove(str.Length - 1);
+                str = str.Remove(str.Length - 1);
 
                 //Add a pipe as separation mark
                 str += "|" + g.getType();
@@ -1025,7 +1043,7 @@ public class Control : MonoBehaviour
         else
         {
             //Read all lines from the found file
-            String[] content = File.ReadAllLines(filePath);
+            string[] content = File.ReadAllLines(filePath);
 
             //Iterate through all lines of the file
             foreach (String line in content)
@@ -1056,7 +1074,7 @@ public class Control : MonoBehaviour
                 //Extract the type part of the line string
                 String type = shortLine;
 
-                
+
 
                 //Create the highlight from the string
                 mh.AddItem(posList, texPosList, timeList, type);
