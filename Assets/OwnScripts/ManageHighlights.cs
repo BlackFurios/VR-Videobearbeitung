@@ -19,7 +19,7 @@ public class ManageHighlights : MonoBehaviour
 
     private bool                    textShown = false;                          //Is currently a text shown
     private int                     showTime = 1;                               //How long texts should be shown in seconds
-    private int                     hlShowTime = 1;                             //How long a highlight item should be shown in seconds
+    private int                     hlShowTime = 2;                             //How long a highlight item should be shown in seconds
 
     public class Highlight
     {
@@ -27,7 +27,8 @@ public class ManageHighlights : MonoBehaviour
         private List<Vector2>       texPos = new List<Vector2>();               //List of all texture positions of the highlight
         private List<TimeSpan>      time = new List<TimeSpan>();                //List of all time positions of the highlight
         private String              type;                                       //The type of the highlight
-        private GameObject          obj;                                        //The gameObject which is shown if one has to be shown
+
+        public List<GameObject>     objList = new List<GameObject>();           //List of currently shown highlights
 
         public Highlight(List<Vector3> initPos, List<Vector2> initTexPos,
             List<TimeSpan> initTime, String initType)                           //Constructor of the Highlight class
@@ -61,16 +62,6 @@ public class ManageHighlights : MonoBehaviour
         {
             return type;
         }
-
-        public GameObject getObject()
-        {
-            return obj;
-        }
-
-        public void setObject(GameObject val)
-        {
-            obj = val;
-        }
     };
 
     //Use this for initialization
@@ -94,42 +85,35 @@ public class ManageHighlights : MonoBehaviour
 	//Update is called once per frame
 	void Update ()
     {
+        //Save the current time for further checks
+        TimeSpan currentTime = mp.GetCurrentPos();
+
         //Iterate through the list of all highlights
         foreach (Highlight h in hList)
         {
             //Check if the highlight should be shown
-            if (mp.GetCurrentPos().TotalMilliseconds >= h.getTime().First<TimeSpan>().TotalMilliseconds &&
-                mp.GetCurrentPos().TotalMilliseconds <= h.getTime().Last<TimeSpan>().TotalMilliseconds)
+            if (currentTime.TotalMilliseconds > h.getTime().First<TimeSpan>().TotalMilliseconds &&
+                currentTime.TotalMilliseconds < h.getTime().Last<TimeSpan>().TotalMilliseconds)
             {
-                //Check if the highlight goes to a next step in its chain
-                if (h.getTime().Contains(mp.GetCurrentPos()))
+                //Check if the current time is present in the list of all highlight times
+                if (h.getTime().Contains(currentTime))
                 {
-                    //Iterate through all time steps of the highlight
-                    for (int i = 0; i < h.getTime().Count; i++)
-                    {
-                        //Check for the current time position and if there is already a gameObject
-                        if (h.getObject() != null)
-                        {
-                            //Set the object variable to null to safely destroy the gameObject
-                            h.getObject().transform.position = CalculateHighlightPosition(h.getPos()[i]);
-                            h.getObject().transform.rotation = CalculateHighlightRotation();
-                        }
-                        else
-                        {
-                            //Spawn a new gameObject and set the variable obj with it
-                            h.setObject(SpawnHighlight(h.getPos()[i]));
-                        }
-                    }
+                    //Get the index of the current time in the time list of the highlight
+                    int index = h.getTime().IndexOf(currentTime);
+
+                    //Spawn an object at the current hitghlight position
+                    GameObject currentObj = SpawnHighlight(h.getPos()[index]);
+
+                    //Add the object to the lst of all objects of this highlight
+                    h.objList.Add(currentObj);
+
+                    //Destroy the object after a ceratin delay --> hlShowTime
+                    Destroy(currentObj, hlShowTime);
                 }
             }
-            //Check if there is already a gameObject
-            else if (h.getObject() != null)
+            else if (h.objList.Count > 0)
             {
-                //Set the object variable to null to safely destroy the gameObject
-                h.setObject(null);
-
-                //Delete the gameObject
-                Destroy(h.getObject(), hlShowTime);
+                h.objList.Clear();
             }
         }
     }
@@ -145,19 +129,19 @@ public class ManageHighlights : MonoBehaviour
     }
 
     //Spawns highlight with if no oher highlight collides with it
-    GameObject SpawnHighlight(Vector3 pos)
+    public GameObject SpawnHighlight(Vector3 pos)
     {
         //Spawn the highlight
-        return Instantiate(highLight, CalculateHighlightPosition(pos), CalculateHighlightRotation());
+        return Instantiate(highLight, pos, CalculateHighlightRotation());
     }
 
-    Vector3 CalculateHighlightPosition(Vector3 pos)
+    public Vector3 CalculateHighlightPosition(Vector3 pos)
     {
         //Calculate the position of this highlight
-        Vector3 spawnPos = pos - Camera.main.transform.position;
-        spawnPos.x = spawnPos.x * 0.9f;
-        spawnPos.y = spawnPos.y * 0.9f;
-        spawnPos.z = spawnPos.z * 0.9f;
+        Vector3 spawnPos = pos;
+        spawnPos.x = spawnPos.x * 0.8f;
+        spawnPos.y = spawnPos.y * 0.8f;
+        spawnPos.z = spawnPos.z * 0.8f;
 
         return spawnPos;
     }
@@ -206,7 +190,7 @@ public class ManageHighlights : MonoBehaviour
     }
 
     //Empties the list of all highlights and destroys all highlight gameObjects
-    public void DeleteAllItems()
+    public void DeleteAllHighlights()
     {
         //Check if highlights were already spawned
         if (GetList().Count != 0)
@@ -214,22 +198,26 @@ public class ManageHighlights : MonoBehaviour
             //Iterate through the list of all managed highlights
             foreach (Highlight h in hList)
             {
-                DeleteItem(h);
+                DeleteHighlight(h);
             }
         }
     }
 
     //Removes highlight from the list of managed highlights
-    public void DeleteItem(Highlight current)
+    public void DeleteHighlight(Highlight current)
     {
         //Check if the currently selected highlight is a real highlight
         if (current != null)
         {
             //Check if this highlight has a gameObject
-            if (current.getObject() != null)
+            if (current.objList.Count > 0)
             {
-                //Destroy the gameObject of this highlight
-                DestroyImmediate(current.getObject());
+                //Iterate through the list of objects of the highlight
+                foreach (GameObject g in current.objList)
+                {
+                    //Destroy the gameObject of this highlight
+                    DestroyImmediate(g);
+                }
             }
 
             //Delete highlight from list and destroy the highlight
