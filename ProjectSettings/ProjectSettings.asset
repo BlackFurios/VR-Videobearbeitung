@@ -10,8 +10,8 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: Oculus
-  productName: Oculus Sample Framework
+  companyName: HSFulda
+  productName: VRVideoschnitt
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13333334, g: 0.17254902, b: 0.21176471, a: 1}
@@ -140,7 +140,7 @@ PlayerSettings:
   protectGraphicsMemory: 0
   useHDRDisplay: 0
   applicationIdentifier:
-    Android: com.oculus.SampleFramework
+    Android: com.HSFulda.SampleFramework
     Standalone: unity.Oculus.Oculus Sample Framework
     Tizen: com.oculus.SampleFramework
     iOS: com.oculus.SampleFramework
