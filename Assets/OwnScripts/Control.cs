@@ -977,7 +977,7 @@ public class Control : MonoBehaviour
     }
 
     //Saves the highlights of the video into a *.hl file
-    void Save(String video)
+    public void Save(String video)
     {
         //Show the user it started the saving process
         StartCoroutine(ShowTextForTime(video + " is saving..."));

@@ -392,6 +392,9 @@ public class MediaPlayer : MonoBehaviour
             //Check if the video player is playing and is at the end of the video
             if (GetMovieName() != String.Empty && GetCurrentPos().TotalSeconds == GetMovieLength().TotalSeconds - 1)
             {
+                //Autosave the current highlight progress
+                cr.Save(GetMovieName());
+
                 //Iterate through all videos
                 for (int i = 0; i < GetMovieList().Count; i++)
                 {
@@ -409,7 +412,7 @@ public class MediaPlayer : MonoBehaviour
                         SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
 
                         //Load save file for currently selected video
-                        cr.Load(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+                        cr.Load(GetMovieName());
                         break;
                     }
                 }
