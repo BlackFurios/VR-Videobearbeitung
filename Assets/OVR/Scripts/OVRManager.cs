@@ -19,8 +19,8 @@ limitations under the License.
 
 ************************************************************************************/
 
-#if !UNITY_5_4_OR_NEWER
-#error Oculus Utilities require Unity 5.4 or higher.
+#if !UNITY_5_3_OR_NEWER
+#error Oculus Utilities require Unity 5.3 or higher.
 #endif
 
 using System;
@@ -265,43 +265,38 @@ public class OVRManager : MonoBehaviour
 		}
 	}
 
-    [Header("Performance/Quality")]
 	/// <summary>
 	/// If true, distortion rendering work is submitted a quarter-frame early to avoid pipeline stalls and increase CPU-GPU parallelism.
 	/// </summary>
-    [Tooltip("If true, distortion rendering work is submitted a quarter-frame early to avoid pipeline stalls and increase CPU-GPU parallelism.")]
 	public bool queueAhead = true;
 
 	/// <summary>
 	/// If true, Unity will use the optimal antialiasing level for quality/performance on the current hardware.
 	/// </summary>
-    [Tooltip("If true, Unity will use the optimal antialiasing level for quality/performance on the current hardware.")]
 	public bool useRecommendedMSAALevel = false;
 
 	/// <summary>
 	/// If true, dynamic resolution will be enabled
 	/// </summary>
-    [Tooltip("If true, dynamic resolution will be enabled")]
 	public bool enableAdaptiveResolution = false;
 
     /// <summary>
-    /// Min RenderScale the app can reach under adaptive resolution mode ( enableAdaptiveResolution = true );
+    /// Max RenderScale the app can reach under adaptive resolution mode ( enableAdaptiveResolution = ture );
     /// </summary>
     [RangeAttribute(0.5f, 2.0f)]
-    [Tooltip("Min RenderScale the app can reach under adaptive resolution mode")]
-    public float minRenderScale = 0.7f;
-
-    /// <summary>
-    /// Max RenderScale the app can reach under adaptive resolution mode ( enableAdaptiveResolution = true );
-    /// </summary>   
-    [RangeAttribute(0.5f, 2.0f)]
-    [Tooltip("Max RenderScale the app can reach under adaptive resolution mode")]
     public float maxRenderScale = 1.0f;
 
     /// <summary>
-    /// The number of expected display frames per rendered frame.
+    /// Min RenderScale the app can reach under adaptive resolution mode ( enableAdaptiveResolution = ture );
     /// </summary>
-    public int vsyncCount
+    [RangeAttribute(0.5f, 2.0f)]
+
+    public float minRenderScale = 0.7f;
+
+	/// <summary>
+	/// The number of expected display frames per rendered frame.
+	/// </summary>
+	public int vsyncCount
 	{
 		get {
 			if (!isHmdPresent)
@@ -432,7 +427,7 @@ public class OVRManager : MonoBehaviour
 
 	/// <summary>
 	/// Gets or sets the eye texture format.
-	/// This feature is only for UNITY_5_6_OR_NEWER On PC
+	/// This feature is only for UNITY_5_6_OR_NEWER
 	/// </summary>
 	public static EyeTextureFormat eyeTextureFormat
 	{
@@ -447,9 +442,7 @@ public class OVRManager : MonoBehaviour
 		}
 	}
 
-    [Header("Tracking")]
-    [SerializeField]
-    [Tooltip("Defines the current tracking origin type.")]
+	[SerializeField]
 	private OVRManager.TrackingOrigin _trackingOriginType = OVRManager.TrackingOrigin.EyeLevel;
 	/// <summary>
 	/// Defines the current tracking origin type.
@@ -478,25 +471,16 @@ public class OVRManager : MonoBehaviour
 	/// <summary>
 	/// If true, head tracking will affect the position of each OVRCameraRig's cameras.
 	/// </summary>
-    [Tooltip("If true, head tracking will affect the position of each OVRCameraRig's cameras.")]
 	public bool usePositionTracking = true;
-
-	/// <summary>
-	/// If true, head tracking will affect the rotation of each OVRCameraRig's cameras.
-	/// </summary>
-	[HideInInspector]
-	public bool useRotationTracking = true;
 
 	/// <summary>
 	/// If true, the distance between the user's eyes will affect the position of each OVRCameraRig's cameras.
 	/// </summary>
-    [Tooltip("If true, the distance between the user's eyes will affect the position of each OVRCameraRig's cameras.")]
 	public bool useIPDInPositionTracking = true;
 
 	/// <summary>
 	/// If true, each scene load will cause the head pose to reset.
 	/// </summary>
-    [Tooltip("If true, each scene load will cause the head pose to reset.")]
 	public bool resetTrackerOnLoad = false;
 
 	/// <summary>
@@ -584,7 +568,12 @@ public class OVRManager : MonoBehaviour
         chromatic = false;
 #endif
 
-        Initialize();
+		if (display == null)
+			display = new OVRDisplay();
+		if (tracker == null)
+			tracker = new OVRTracker();
+		if (boundary == null)
+			boundary = new OVRBoundary();
 
 		if (resetTrackerOnLoad)
 			display.RecenterPose();
@@ -593,37 +582,8 @@ public class OVRManager : MonoBehaviour
 		OVRPlugin.occlusionMesh = false;
 	}
 
-#if UNITY_EDITOR
-	private static bool _scriptsReloaded;
-
-	[UnityEditor.Callbacks.DidReloadScripts]
-	static void ScriptsReloaded()
-	{
-		_scriptsReloaded = true;
-	}
-#endif
-
-	void Initialize()
-	{
-		if (display == null)
-			display = new OVRDisplay();
-		if (tracker == null)
-			tracker = new OVRTracker();
-		if (boundary == null)
-			boundary = new OVRBoundary();
-	}
-
 	private void Update()
 	{
-#if UNITY_EDITOR
-		if (_scriptsReloaded)
-		{
-			_scriptsReloaded = false;
-			instance = this;
-			Initialize();
-		}
-#endif
-
 		if (OVRPlugin.shouldQuit)
 			Application.Quit();
 
@@ -634,8 +594,6 @@ public class OVRManager : MonoBehaviour
 			trackingOriginType = _trackingOriginType;
 
 		tracker.isEnabled = usePositionTracking;
-
-		OVRPlugin.rotation = useRotationTracking;
 
 		OVRPlugin.useIPDInPositionTracking = useIPDInPositionTracking;
 
@@ -746,7 +704,7 @@ public class OVRManager : MonoBehaviour
 
 
 		// Changing effective rendering resolution dynamically according performance
-#if (UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN) && UNITY_5_4_OR_NEWER
+#if (UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN) && UNITY_5 && !(UNITY_5_0 || UNITY_5_1 || UNITY_5_2 || UNITY_5_3)
 
 		if (enableAdaptiveResolution)
 		{
@@ -760,7 +718,6 @@ public class OVRManager : MonoBehaviour
                 // Adjusting maxRenderScale in case app started with a larger renderScale value
                 maxRenderScale = Mathf.Max(maxRenderScale, VR.VRSettings.renderScale);
             }
-            minRenderScale = Mathf.Min(minRenderScale, maxRenderScale);
             float minViewportScale = minRenderScale / VR.VRSettings.renderScale;
             float recommendedViewportScale = OVRPlugin.GetEyeRecommendedResolutionScale() / VR.VRSettings.renderScale;
             recommendedViewportScale = Mathf.Clamp(recommendedViewportScale, minViewportScale, 1.0f);

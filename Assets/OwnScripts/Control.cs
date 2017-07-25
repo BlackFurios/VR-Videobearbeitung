@@ -1064,7 +1064,7 @@ public class Control : MonoBehaviour
     }
 
     //Load the previously saved highlights for the active video
-    void Load(String video)
+    public void Load(String video)
     {
         //Show the user it started the loading process
         StartCoroutine(ShowTextForTime(video + " is loading..."));

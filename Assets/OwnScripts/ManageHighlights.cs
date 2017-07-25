@@ -101,14 +101,23 @@ public class ManageHighlights : MonoBehaviour
                     //Get the index of the current time in the time list of the highlight
                     int index = h.getTime().IndexOf(currentTime);
 
-                    //Spawn an object at the current hitghlight position
-                    GameObject currentObj = SpawnHighlight(h.getPos()[index]);
+                    //Check if this highlight has world positions (save file or edl file)
+                    if (h.getPos().Count > 0)
+                    {
+                        //Spawn an object at the current hitghlight position
+                        GameObject currentObj = SpawnHighlight(h.getPos()[index]);
 
-                    //Add the object to the lst of all objects of this highlight
-                    h.objList.Add(currentObj);
+                        //Add the object to the lst of all objects of this highlight
+                        h.objList.Add(currentObj);
 
-                    //Destroy the object after a ceratin delay --> hlShowTime
-                    Destroy(currentObj, hlShowTime);
+                        //Destroy the object after a ceratin delay --> hlShowTime
+                        Destroy(currentObj, hlShowTime);
+                    }
+                    else
+                    {
+                        //Show current time position in active highlight without world position
+                        ShowText("-!- " + mp.GetCurrentPos().Subtract(h.getTime()[index]) + " -!-");
+                    }
                 }
             }
             else if (h.objList.Count > 0)

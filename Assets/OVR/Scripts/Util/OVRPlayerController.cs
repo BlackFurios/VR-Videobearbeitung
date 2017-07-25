@@ -93,7 +93,6 @@ public class OVRPlayerController : MonoBehaviour
 	private bool prevHatLeft = false;
 	private bool prevHatRight = false;
 	private float SimulationRate = 60f;
-	private float buttonRotation = 0f;
 
 	void Start()
 	{
@@ -142,16 +141,6 @@ public class OVRPlayerController : MonoBehaviour
 		{
 			CameraRig.UpdatedAnchors -= UpdateTransform;
 		}
-	}
-
-	void Update()
-	{
-		//Use keys to ratchet rotation
-		if (Input.GetKeyDown(KeyCode.Q))
-			buttonRotation -= RotationRatchet;
-
-		if (Input.GetKeyDown(KeyCode.E))
-			buttonRotation += RotationRatchet;
 	}
 
 	protected virtual void UpdateController()
@@ -302,8 +291,12 @@ public class OVRPlayerController : MonoBehaviour
 
 		prevHatRight = curHatRight;
 
-		euler.y += buttonRotation;
-		buttonRotation = 0f;
+		//Use keys to ratchet rotation
+		if (Input.GetKeyDown(KeyCode.Q))
+			euler.y -= RotationRatchet;
+
+		if (Input.GetKeyDown(KeyCode.E))
+			euler.y += RotationRatchet;
 
 		float rotateInfluence = SimulationRate * Time.deltaTime * RotationAmount * RotationScaleMultiplier;
 
@@ -461,7 +454,7 @@ public class OVRPlayerController : MonoBehaviour
 	/// </summary>
 	public void ResetOrientation()
 	{
-		if (HmdResetsY && !HmdRotatesY)
+		if (HmdResetsY)
 		{
 			Vector3 euler = transform.rotation.eulerAngles;
 			euler.y = InitialYRotation;
