@@ -70,6 +70,8 @@ public class MediaPlayer : MonoBehaviour
 {
     private Canvas vrMenu;                                              //Instance of the VRMenu object
 
+    private Control cr;                                                 //Instance of the Control script
+
     private List<videoList>     movieList = new List<videoList>();      //List of all available videos with their paths
 
     private string              movieName = string.Empty;               //Name of the video which is currently played
@@ -148,6 +150,8 @@ public class MediaPlayer : MonoBehaviour
     /// </summary>
     public void Awake()
     {
+        cr = GetComponent<Control>();
+
         //Search for VRMenu and highlightMenu
         foreach (Canvas c in FindObjectsOfType<Canvas>())
         {
@@ -357,6 +361,9 @@ public class MediaPlayer : MonoBehaviour
 
                         //Set the next videoas current video
                         SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+
+                        //Load save file for currently selected video
+                        cr.Load(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
                         break;
                     }
                 }
@@ -400,6 +407,9 @@ public class MediaPlayer : MonoBehaviour
 
                         //Set the next videoas current video
                         SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
+
+                        //Load save file for currently selected video
+                        cr.Load(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
                         break;
                     }
                 }
@@ -429,6 +439,8 @@ public class MediaPlayer : MonoBehaviour
     //Starts the player with a given video
     public String StartVideo()
     {
+        Debug.Log("Start video!!!");
+
         //Unpauses the media player before starting the video
         SetPaused(false);
 
@@ -441,9 +453,23 @@ public class MediaPlayer : MonoBehaviour
     public TimeSpan GetMovieLength()
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
-        return TimeSpan.FromMilliseconds(mediaPlayer.Call<int>("getDuration"));
+        if (mediaPlayer != null)
+        {
+            return TimeSpan.FromMilliseconds(mediaPlayer.Call<int>("getDuration"));
+        }
+        else
+        {
+            return TimeSpan.Zero;
+        }
 #else
-        return TimeSpan.FromSeconds(vp.frameCount / vp.frameRate);
+        if (vp != null)
+        {
+            return TimeSpan.FromSeconds(vp.frameCount / vp.frameRate);
+        }
+        else
+        {
+            return TimeSpan.Zero;
+        }
 #endif
     }
 
@@ -621,6 +647,7 @@ public class MediaPlayer : MonoBehaviour
 			{
                 //Set the new pausing state in the android media player
 				mediaPlayer.Call((videoPaused) ? "pause" : "start");
+                Debug.Log("Android Media Player un/paused!");
 			}
 			catch (Exception e)
 			{
