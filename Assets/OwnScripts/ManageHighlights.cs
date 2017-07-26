@@ -16,24 +16,27 @@ public class ManageHighlights : MonoBehaviour
 
     [SerializeField]
     private  GameObject             highLight;                                  //Highlight prefab to be managed
+    [SerializeField]
+    private GameObject              lightHighLight;                             //HighlightLight prefab to be managed
 
     private bool                    textShown = false;                          //Is currently a text shown
     private int                     showTime = 1;                               //How long texts should be shown in seconds
-    private int                     hlShowTime = 2;                             //How long a highlight item should be shown in seconds
 
     public class Highlight
     {
         private List<Vector3>       pos = new List<Vector3>();                  //List of all world positions of the highlight
+        private List<Quaternion>    rot = new List<Quaternion>();               //
         private List<Vector2>       texPos = new List<Vector2>();               //List of all texture positions of the highlight
         private List<TimeSpan>      time = new List<TimeSpan>();                //List of all time positions of the highlight
         private String              type;                                       //The type of the highlight
 
-        public List<GameObject>     objList = new List<GameObject>();           //List of currently shown highlights
+        public GameObject     obj;                                              //List of currently shown highlights
 
-        public Highlight(List<Vector3> initPos, List<Vector2> initTexPos,
-            List<TimeSpan> initTime, String initType)                           //Constructor of the Highlight class
+        public Highlight(List<Vector3> initPos, List<Quaternion> initRot, 
+            List<Vector2> initTexPos, List<TimeSpan> initTime, String initType) //Constructor of the Highlight class
         {
             pos = initPos.ToList();
+            rot = initRot.ToList();
             texPos = initTexPos.ToList();
             time = initTime.ToList();
             type = initType;
@@ -43,6 +46,12 @@ public class ManageHighlights : MonoBehaviour
         public List<Vector3> getPos()
         {
             return pos;
+        }
+
+        //Returns the world rotation of the highlight
+        public List<Quaternion> getRot()
+        {
+            return rot;
         }
 
         //Returns the texture position of the highlight
@@ -61,6 +70,16 @@ public class ManageHighlights : MonoBehaviour
         public String getType()
         {
             return type;
+        }
+
+        public GameObject getObj()
+        {
+            return obj;
+        }
+
+        public void setObj(GameObject val)
+        {
+            obj = val;
         }
     };
 
@@ -85,63 +104,41 @@ public class ManageHighlights : MonoBehaviour
 	//Update is called once per frame
 	void Update ()
     {
-        //Save the current time for further checks
-        TimeSpan currentTime = mp.GetCurrentPos();
-
         //Iterate through the list of all highlights
         foreach (Highlight h in hList)
         {
-            //Check if the highlight should be shown
-            if (currentTime.TotalMilliseconds > h.getTime().First<TimeSpan>().TotalMilliseconds &&
-                currentTime.TotalMilliseconds < h.getTime().Last<TimeSpan>().TotalMilliseconds)
+            if (mp.GetCurrentPos() == h.getTime().First<TimeSpan>())
             {
-                //Get the index of the current time in the time list of the highlight
-                int index = h.getTime().IndexOf(currentTime);
+                GameObject g = SpawnHighlight(h.getPos().First<Vector3>(), h.getRot().First<Quaternion>());
 
-                //Check if the current time is present in the list of all highlight times
-                if (index != -1)
-                {
-                    //Check if this highlight has world positions (save file or edl file)
-                    if (h.getPos().Count > 0)
-                    {
-                        //Spawn an object at the current hitghlight position
-                        GameObject currentObj = SpawnHighlight(h.getPos()[index]);
-
-                        //Add the object to the lst of all objects of this highlight
-                        h.objList.Add(currentObj);
-
-                        //Destroy the object after a ceratin delay --> hlShowTime
-                        Destroy(currentObj, hlShowTime);
-                    }
-                    else
-                    {
-                        //Show current time position in active highlight without world position
-                        ShowText("-!- " + mp.GetCurrentPos().Subtract(h.getTime()[index]) + " -!-");
-                    }
-                }
-            }
-            else if (h.objList.Count > 0)
-            {
-                h.objList.Clear();
+                g.GetComponent<HighlightLifetimer>().SetPosList(h.getPos());
+                g.GetComponent<HighlightLifetimer>().SetRotList(h.getRot());
             }
         }
     }
 
     //Public function to create and add new highlight to video
-    public void AddItem(List<Vector3> pos, List<Vector2> texPos, List<TimeSpan>  ts, String type)
+    public void AddItem(List<Vector3> pos, List<Quaternion> rot, List<Vector2> texPos, List<TimeSpan>  ts, String type)
     {
         //Set current to the newly spawned highlight object
-        Highlight current = new Highlight(pos, texPos, ts, type);
+        Highlight current = new Highlight(pos, rot, texPos, ts, type);
 
         //Add new highlight to list of managed highlights
         hList.Add(current);
     }
 
-    //Spawns highlight with if no oher highlight collides with it
-    public GameObject SpawnHighlight(Vector3 pos)
+    //Spawns highlightLight with if no other highlight collides with it
+    public GameObject SpawnHighlightLight(Vector3 pos, Quaternion rot)
     {
         //Spawn the highlight
-        return Instantiate(highLight, pos, CalculateHighlightRotation());
+        return Instantiate(lightHighLight, pos, rot);
+    }
+
+    //Spawns highlight with if no other highlight collides with it
+    public GameObject SpawnHighlight(Vector3 pos, Quaternion rot)
+    {
+        //Spawn the highlight
+        return Instantiate(highLight, pos, rot);
     }
 
     public Vector3 CalculateHighlightPosition(Vector3 pos)
@@ -155,7 +152,7 @@ public class ManageHighlights : MonoBehaviour
         return spawnPos;
     }
 
-    Quaternion CalculateHighlightRotation()
+    public Quaternion CalculateHighlightRotation()
     {
         //Calculate the Rotation of this highlight
         Quaternion spawnRot = Quaternion.Euler(Camera.main.transform.eulerAngles);
@@ -219,14 +216,10 @@ public class ManageHighlights : MonoBehaviour
         if (current != null)
         {
             //Check if this highlight has a gameObject
-            if (current.objList.Count > 0)
+            if (current.getObj() != null)
             {
-                //Iterate through the list of objects of the highlight
-                foreach (GameObject g in current.objList)
-                {
-                    //Destroy the gameObject of this highlight
-                    DestroyImmediate(g);
-                }
+                //Destroy the gameObject of this highlight
+                DestroyImmediate(current.getObj());
             }
 
             //Delete highlight from list and destroy the highlight

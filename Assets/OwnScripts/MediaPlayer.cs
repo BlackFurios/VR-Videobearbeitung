@@ -660,8 +660,16 @@ public class MediaPlayer : MonoBehaviour
 			videoPaused = wasPaused;
 			try
 			{
-                //Set the new pausing state in the android media player
-				mediaPlayer.Call((videoPaused) ? "pause" : "start");
+                if (videoPaused)
+                {
+                    mediaPlayer.Call("pause");
+                    Debug.Log("Playback paused");
+                }
+                else
+                {
+                    mediaPlayer.Call("start");
+                    Debug.Log("Playback resumed");
+                }
 			}
 			catch (Exception e)
 			{

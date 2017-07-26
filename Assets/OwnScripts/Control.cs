@@ -27,6 +27,7 @@ public class Control : MonoBehaviour
     private List<String>        videoList = new List<string>();                 //List of currently possible movies
 
     private List<Vector3>       spawnPosList = new List<Vector3>();             //The world position list of the currently created highlight
+    private List<Quaternion>    spawnRotList = new List<Quaternion>();          //The world rotation list of the currently created highlight
     private List<Vector2>       spawnTexPosList = new List<Vector2>();          //The texture position list of the currently created highlight
     private List<TimeSpan>      spawnTimeList = new List<TimeSpan>();           //The time positione list of the currently created highlight
     private List<GameObject>    spawnObjectList = new List<GameObject>();       //The object list of the currently created highlight
@@ -148,7 +149,7 @@ public class Control : MonoBehaviour
         if (Input.GetButtonDown("X-Android"))
         {
             //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) &&
                 hit.transform.gameObject.name == "Highlight(Clone)")
             {
                 //Iterate through the list of all managed highlights
@@ -159,6 +160,8 @@ public class Control : MonoBehaviour
                     {
                         //Delete selected highlight
                         mh.DeleteHighlight(h);
+
+                        StartCoroutine(ShowTextForTime("Highlight deleted"));
                         break;
                     }
                 }
@@ -167,7 +170,9 @@ public class Control : MonoBehaviour
             {
                 //Clear complete highlight list and delete all highlights at once
                 mh.DeleteAllHighlights();
-            }  
+
+                StartCoroutine(ShowTextForTime("All Highlights deleted"));
+            }
         }
 
         //Check if the Y-Button is pressed
@@ -187,7 +192,7 @@ public class Control : MonoBehaviour
         }
 
         //Check if the R1-Button is pressed
-        if (Input.GetButton("R1-Android"))
+        if (Input.GetButton("R1-Android") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
         {
             //Check if raycast hits the media sphere
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
@@ -203,26 +208,30 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Add new parameters to spawn lists
-                spawnPosList.Add(mh.CalculateHighlightPosition(hit.point));
+                Vector3 initPos =  mh.CalculateHighlightPosition(hit.point);
+                spawnPosList.Add(initPos);
+                Quaternion initRot = mh.CalculateHighlightRotation();
+                spawnRotList.Add(initRot);
                 spawnTexPosList.Add(coords);
                 spawnTimeList.Add(mp.GetCurrentPos());
-                
+
                 //Set the lastSpawn time position to the current time position
                 lastSpawn = mp.GetCurrentPos();
 
                 //Spawn a highlight to give feedback to the user
-                spawnObjectList.Add(mh.SpawnHighlight(hit.point));
+                spawnObjectList.Add(mh.SpawnHighlightLight(initPos, initRot));
             }
         }
 
         //Check if the R1-Button not pressed anymore
-        if (Input.GetButtonUp("R1-Android") && spawnPosList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
+        if (Input.GetButtonUp("R1-Android") && spawnPosList.Count != 0 && spawnRotList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
         {
             //Create highlight
-            mh.AddItem(spawnPosList, spawnTexPosList, spawnTimeList, "Cut");
+            mh.AddItem(spawnPosList, spawnRotList, spawnTexPosList, spawnTimeList, "Cut");
 
             //Empty all spawn parameter lists
             spawnPosList.Clear();
+            spawnRotList.Clear();
             spawnTexPosList.Clear();
             spawnTimeList.Clear();
 
@@ -258,7 +267,7 @@ public class Control : MonoBehaviour
         if (Input.GetButton("R2-Android"))
         {
             //Check if the StartMenu is enabled and the dropdown list is closed
-            if (stMenu.enabled == true && opened == false && 
+            if (stMenu.enabled == true && opened == false &&
                 Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 switch (hit.transform.gameObject.name)
@@ -299,7 +308,7 @@ public class Control : MonoBehaviour
             }
 
             //Check if the StartMenu is enabled and the dropdown list is opened
-            if (stMenu.enabled == true && opened == true && 
+            if (stMenu.enabled == true && opened == true &&
                 Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check for all videos if the shown item is part of possible videos
@@ -442,7 +451,7 @@ public class Control : MonoBehaviour
         //Check if the A-Button is pressed
         if (Input.GetButtonDown("A-Windows"))
         {
-
+            
         }
 
         //Check if the B-Button is pressed
@@ -500,7 +509,7 @@ public class Control : MonoBehaviour
         }
 
         //Check if the R1-Button is pressed
-        if (Input.GetButton("R1-Windows"))
+        if (Input.GetButton("R1-Windows") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
         {
             //Check if raycast hits the media sphere
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
@@ -516,7 +525,10 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Add new parameters to spawn lists
-                spawnPosList.Add(mh.CalculateHighlightPosition(hit.point));
+                Vector3 initPos =  mh.CalculateHighlightPosition(hit.point);
+                spawnPosList.Add(initPos);
+                Quaternion initRot = mh.CalculateHighlightRotation();
+                spawnRotList.Add(initRot);
                 spawnTexPosList.Add(coords);
                 spawnTimeList.Add(mp.GetCurrentPos());
 
@@ -524,18 +536,19 @@ public class Control : MonoBehaviour
                 lastSpawn = mp.GetCurrentPos();
 
                 //Spawn a highlight to give feedback to the user
-                spawnObjectList.Add(mh.SpawnHighlight(hit.point));
+                spawnObjectList.Add(mh.SpawnHighlightLight(initPos, initRot));
             }
         }
 
         //Check if the R1-Button not pressed anymore
-        if (Input.GetButtonUp("R1-Windows") && spawnPosList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
+        if (Input.GetButtonUp("R1-Windows") && spawnPosList.Count != 0 && spawnRotList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
         {
             //Create highlight
-            mh.AddItem(spawnPosList, spawnTexPosList, spawnTimeList, "Cut");
+            mh.AddItem(spawnPosList, spawnRotList, spawnTexPosList, spawnTimeList, "Cut");
 
             //Empty all spawn parameter lists
             spawnPosList.Clear();
+            spawnRotList.Clear();
             spawnTexPosList.Clear();
             spawnTimeList.Clear();
 
@@ -934,7 +947,7 @@ public class Control : MonoBehaviour
                     }
 
                     //Create a highlight from the parameters
-                    mh.AddItem(new List<Vector3>(), new List<Vector2>(), hlTime, parameters[2]);
+                    mh.AddItem(new List<Vector3>(), new List<Quaternion>(), new List<Vector2>(), hlTime, parameters[2]);
 
                     //Clear the complete body after creating the necessary highlights
                     body.Clear();
@@ -1022,6 +1035,18 @@ public class Control : MonoBehaviour
                 //Add a pipe as separation mark
                 str += "|";
 
+                //Iterate through all world roatations in the world position list of the highlight
+                foreach (Quaternion rot in g.getRot())
+                {
+                    //Add the current world rotation to the save string
+                    str += rot + ";";
+                }
+                //Delete last semicolon of the list
+                str = str.Remove(str.Length - 1);
+
+                //Add a pipe as separation mark
+                str += "|";
+
                 //Iterate through all texture positions in the texture position list of the highlight
                 foreach (Vector2 texPos in g.getTexPos())
                 {
@@ -1092,8 +1117,15 @@ public class Control : MonoBehaviour
                 String posListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
-                //Parse the world possition string into a Vector3
+                //Parse the world position string into a Vector3
                 List<Vector3> posList = ParseStringToVector3List(posListStr);
+
+                //Extract the world rotation part of the line string
+                String rotListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
+                shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
+
+                //Parse the world rotation string into a Vector3
+                List<Quaternion> rotList = ParseStringToQuaternionList(rotListStr);
 
                 //Extract the texture position part of the line string
                 String texPosListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
@@ -1115,12 +1147,42 @@ public class Control : MonoBehaviour
 
 
                 //Create the highlight from the string
-                mh.AddItem(posList, texPosList, timeList, type);
+                mh.AddItem(posList, rotList, texPosList, timeList, type);
             }
             Debug.Log("Anzahl erstellter Highlights: " + mh.GetList().Count);
             //Show the user it finished the loading process
             StartCoroutine(ShowTextForTime(video + " is loaded"));
         }
+    }
+
+    //Parses a given string to a Quaternion
+    List<Quaternion> ParseStringToQuaternionList(String str)
+    {
+        List<Quaternion> result = new List<Quaternion>();
+
+        //Split the String in its single rotation items
+        String[] rotList = str.Split(';');
+
+        //Iterate through all found vector items in the list
+        foreach (String item in rotList)
+        {
+            String rot = item;
+
+            //Check if the vector string is in brackets
+            if (rot.StartsWith("(") && rot.EndsWith(")"))
+            {
+                //Delete both brackets from the end and the start of the string
+                rot = rot.Substring(1, rot.Length - 2);
+            }
+
+            //Split the position string into the x and the y coordinate
+            String[] array = rot.Split(',');
+
+            //Create the Vector2 from both coordinate strings
+            result.Add(new Quaternion(float.Parse(array[0]), float.Parse(array[1]), float.Parse(array[2]), float.Parse(array[3])));
+        }
+
+        return result;
     }
 
     //Parses a given string to a Vector2

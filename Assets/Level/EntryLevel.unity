@@ -583,6 +583,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   highLight: {fileID: 1232875005913234, guid: 030f282f5f230c74abe9d1a0d6598035, type: 2}
+  lightHighLight: {fileID: 1369369983460032, guid: ec43f57dad5decb4fa21e2beb51c580e,
+    type: 2}
 --- !u!114 &273906440
 MonoBehaviour:
   m_ObjectHideFlags: 0
