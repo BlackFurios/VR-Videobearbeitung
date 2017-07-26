@@ -95,12 +95,12 @@ public class ManageHighlights : MonoBehaviour
             if (currentTime.TotalMilliseconds > h.getTime().First<TimeSpan>().TotalMilliseconds &&
                 currentTime.TotalMilliseconds < h.getTime().Last<TimeSpan>().TotalMilliseconds)
             {
-                //Check if the current time is present in the list of all highlight times
-                if (h.getTime().Contains(currentTime))
-                {
-                    //Get the index of the current time in the time list of the highlight
-                    int index = h.getTime().IndexOf(currentTime);
+                //Get the index of the current time in the time list of the highlight
+                int index = h.getTime().IndexOf(currentTime);
 
+                //Check if the current time is present in the list of all highlight times
+                if (index != -1)
+                {
                     //Check if this highlight has world positions (save file or edl file)
                     if (h.getPos().Count > 0)
                     {
