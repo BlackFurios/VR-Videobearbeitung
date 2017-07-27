@@ -25,7 +25,7 @@ public class ManageHighlights : MonoBehaviour
     public class Highlight
     {
         private List<Vector3>       pos = new List<Vector3>();                  //List of all world positions of the highlight
-        private List<Quaternion>    rot = new List<Quaternion>();               //
+        private List<Quaternion>    rot = new List<Quaternion>();               //List of all world rotations of the highlight
         private List<Vector2>       texPos = new List<Vector2>();               //List of all texture positions of the highlight
         private List<TimeSpan>      time = new List<TimeSpan>();                //List of all time positions of the highlight
         private String              type;                                       //The type of the highlight
@@ -72,11 +72,13 @@ public class ManageHighlights : MonoBehaviour
             return type;
         }
 
+        //Returns the representing object of the highlight
         public GameObject getObj()
         {
             return obj;
         }
 
+        //Sets the representing object of the highlight
         public void setObj(GameObject val)
         {
             obj = val;
@@ -107,12 +109,18 @@ public class ManageHighlights : MonoBehaviour
         //Iterate through the list of all highlights
         foreach (Highlight h in hList)
         {
-            if (mp.GetCurrentPos() == h.getTime().First<TimeSpan>())
+            //Check if this highlight is around the time to be spawned and it has not current representation
+            if (AroundTimePosition(mp.GetCurrentPos(), h.getTime().First<TimeSpan>(), 50) && h.getObj() == null)
             {
+                //Spawn the highlight object
                 GameObject g = SpawnHighlight(h.getPos().First<Vector3>(), h.getRot().First<Quaternion>());
 
+                //Give the object both the world position and world rotation list
                 g.GetComponent<HighlightLifetimer>().SetPosList(h.getPos());
                 g.GetComponent<HighlightLifetimer>().SetRotList(h.getRot());
+
+                //Set the newly created gameObject as the representing object of this highlight
+                h.setObj(g);
             }
         }
     }
@@ -141,6 +149,7 @@ public class ManageHighlights : MonoBehaviour
         return Instantiate(highLight, pos, rot);
     }
 
+    //Calculates the correct world position for highlights of a given point
     public Vector3 CalculateHighlightPosition(Vector3 pos)
     {
         //Calculate the position of this highlight
@@ -152,6 +161,7 @@ public class ManageHighlights : MonoBehaviour
         return spawnPos;
     }
 
+    //Calculates the correct world rotation for highlights of a given point
     public Quaternion CalculateHighlightRotation()
     {
         //Calculate the Rotation of this highlight
@@ -224,6 +234,20 @@ public class ManageHighlights : MonoBehaviour
 
             //Delete highlight from list and destroy the highlight
             hList.RemoveAt(hList.IndexOf(current));
+        }
+    }
+
+    //Returns true if two given TimeSpans are within a timely radius to each other
+    bool AroundTimePosition(TimeSpan a, TimeSpan b, double radius)
+    {
+        //Check if the time distance between the two given TimeSpans is shorter than the given radius time
+        if (a.Subtract(b).TotalMilliseconds < radius && b.Subtract(a).TotalMilliseconds < radius)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 

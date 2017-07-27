@@ -132,7 +132,7 @@ public class Control : MonoBehaviour
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         //Check if the A-Button is pressed
-        if (Input.GetButtonDown("A-Android"))
+        if (Input.GetButtonDown("A-Windows"))
         {
 
         }
@@ -195,9 +195,8 @@ public class Control : MonoBehaviour
         if (Input.GetButton("R1-Android") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
         {
             //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
-                hit.transform.gameObject.name != "Highlight(Clone)" && 
-                mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds > spawnRate)
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) &&
+                hit.transform.gameObject.name != "Highlight(Clone)" && hit.transform.gameObject.name != "HighlightLight(Clone)")
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -208,7 +207,7 @@ public class Control : MonoBehaviour
                 coords.y *= tex.height;
 
                 //Add new parameters to spawn lists
-                Vector3 initPos =  mh.CalculateHighlightPosition(hit.point);
+                Vector3 initPos = mh.CalculateHighlightPosition(hit.point);
                 spawnPosList.Add(initPos);
                 Quaternion initRot = mh.CalculateHighlightRotation();
                 spawnRotList.Add(initRot);
@@ -292,9 +291,6 @@ public class Control : MonoBehaviour
                     case "PlayVideo":
                         //Toggle the visibility and interaction of the StartMenu
                         ConfigureMenu(stMenu, false);
-
-                        //Load save file for currently selected video
-                        Load(list.options[list.value].text);
 
                         //Set the chosen video in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
@@ -513,8 +509,7 @@ public class Control : MonoBehaviour
         {
             //Check if raycast hits the media sphere
             if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
-                hit.transform.gameObject.name != "Highlight(Clone)" && 
-                mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds > spawnRate)
+                hit.transform.gameObject.name != "Highlight(Clone)" && hit.transform.gameObject.name != "HighlightLight(Clone)")
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -609,9 +604,6 @@ public class Control : MonoBehaviour
                     case "PlayVideo":
                         //Toggle the visibility and interaction of the StartMenu
                         ConfigureMenu(stMenu, false);
-
-                        //Load save file for currently selected video
-                        Load(list.options[list.value].text);
 
                         //Set the chosen video in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
@@ -1155,7 +1147,7 @@ public class Control : MonoBehaviour
         }
     }
 
-    //Parses a given string to a Quaternion
+    //Parses a given string to a Quaternion list
     List<Quaternion> ParseStringToQuaternionList(String str)
     {
         List<Quaternion> result = new List<Quaternion>();
@@ -1185,7 +1177,7 @@ public class Control : MonoBehaviour
         return result;
     }
 
-    //Parses a given string to a Vector2
+    //Parses a given string to a Vector2 list
     List<Vector2> ParseStringToVector2List(String str)
     {
         List<Vector2> result = new List<Vector2>();
@@ -1215,7 +1207,7 @@ public class Control : MonoBehaviour
         return result;
     }
 
-    //Parses a given string to a Vector3
+    //Parses a given string to a Vector3 list
     List<Vector3> ParseStringToVector3List(String str)
     {
         List<Vector3> result = new List<Vector3>();
@@ -1245,6 +1237,7 @@ public class Control : MonoBehaviour
         return result;
     }
 
+    //Parses a given string to a TimeSpan list
     List<TimeSpan> ParseStringToTimeSpanList(String str)
     {
         List<TimeSpan> result = new List<TimeSpan>();

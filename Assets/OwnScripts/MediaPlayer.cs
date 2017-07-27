@@ -373,9 +373,6 @@ public class MediaPlayer : MonoBehaviour
 
         //                //Set the next videoas current video
         //                SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
-
-        //                //Load save file for currently selected video
-        //                cr.Load(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
         //                break;
         //            }
         //        }
@@ -422,9 +419,6 @@ public class MediaPlayer : MonoBehaviour
 
                         //Set the next videoas current video
                         SetMovieName(GetMovieListMovie(index).Substring(0, GetMovieListMovie(index).LastIndexOf(".")));
-
-                        //Load save file for currently selected video
-                        cr.Load(GetMovieName());
                         break;
                     }
                 }
@@ -455,6 +449,9 @@ public class MediaPlayer : MonoBehaviour
     public String StartVideo()
     {
         Debug.Log("Start video!!!");
+
+        //Load save file for currently selected video
+        cr.Load(GetMovieName());
 
         //Unpauses the media player before starting the video
         SetPaused(false);
