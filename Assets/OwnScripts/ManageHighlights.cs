@@ -116,6 +116,7 @@ public class ManageHighlights : MonoBehaviour
                 GameObject g = SpawnHighlight(h.getPos().First<Vector3>(), h.getRot().First<Quaternion>());
 
                 //Give the object both the world position and world rotation list
+                g.GetComponent<HighlightLifetimer>().SetTimeList(h.getTime());
                 g.GetComponent<HighlightLifetimer>().SetPosList(h.getPos());
                 g.GetComponent<HighlightLifetimer>().SetRotList(h.getRot());
 

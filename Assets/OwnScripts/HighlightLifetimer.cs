@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,62 +7,72 @@ public class HighlightLifetimer : MonoBehaviour
 {
     private List<Vector3>       posList = new List<Vector3>();          //List of all world positions of the represented highlight
     private List<Quaternion>    rotList = new List<Quaternion>();       //List of all world rotations of the represented highlight
+    private List<TimeSpan>      timeList = new List<TimeSpan>();        //List of all time positions of the represented highlight
 
     private int                 index = 0;                              //The current index at which point this highlight representation is in the lists
-    private float               lerpTime = 0.1f;                        //The time period in seconds in which the object moves/rotates between two waypoints
-    private float               currentTime = 0f;                       //The current time during the lerpTime (max value -> 100ms)
+    //private float               lerpTime = 0.1f;                        //The time period in seconds in which the object moves/rotates between two waypoints
+    private float               currentTime = 0f;                       //The current time during the lerpTime
 
 	// Use this for initialization
 	void Start ()
     {
         Debug.Log("Highlight ab " + Time.time + " erzeugt.");
 
-        //Define the next waypoints every 100ms
-        InvokeRepeating("NextWaypoint", 0, lerpTime);
+        //Starts the highlight movement
+        StartCoroutine(MoveHighlight());
     }
 	
 	// Update is called once per frame
 	void Update ()
     {
-        //Check if the highlight has mor than one positions and enough time has passed for lerp
-        if (posList.Count > 1 && currentTime <= lerpTime)
-        {
-            //Add the passed time since last frame to the current time
-            currentTime += Time.deltaTime;
-
-            //Move and rotate the gameObject through lerp over a time of 100ms
-            transform.position = Vector3.Lerp(posList[index], posList[index + 1], currentTime / lerpTime);
-            transform.rotation = Quaternion.Lerp(rotList[index], rotList[index + 1], currentTime / lerpTime);
-        }
-        else
-        {
-            //Reset the current time to zero to restart the lerp movements
-            currentTime = 0f;
-        }
+        
     }
 
-    //Sets the index to index of the next waypoint
-    void NextWaypoint()
+    //Manages the path of the highlight object
+    IEnumerator MoveHighlight ()
     {
-        //Check if the current index is a possible value in the list
-        if (index < posList.Count - 2)
+        //Infinite loop
+        while (true)
         {
+            //Set the current needed time for the lerp to the next time interval in milliseconds
+            currentTime = timeList[index + 1].Subtract(timeList[index]).Milliseconds / 1000;
+            
+            //Starts the transformation of the highlight object via lerp
+            yield return StartCoroutine(LerpToTransform());
+
+            //Check if the indey is the last possible index of the list
+            if (index >= posList.Count - 2)
+            {
+                //Destroys the highlight object
+                Destroy(this.gameObject);
+            }
+
             //Increase the index by one
             index++;
-        }
-        else
-        {
-            //Move and rotate the gameObject through lerp over a time of 100ms
-            transform.position = Vector3.Lerp(posList[index], posList[index + 1], currentTime / lerpTime);
-            transform.rotation = Quaternion.Lerp(rotList[index], rotList[index + 1], currentTime / lerpTime);
 
-            Debug.Log("Highlight um " + Time.time + " gelöscht.");
-
-            //Destroy this gameObject
-            Destroy(this.gameObject);
+            //Wait for the time period the lerp needs to transform the highlight object
+            yield return new WaitForSeconds(currentTime);
         }
     }
 
+    //Transforms (moves, rotates) the highlight object
+    IEnumerator LerpToTransform ()
+    {
+        float timeStep = 0.0f;
+
+        //Loop until the lerp is completed
+        while (timeStep < 1.0f)
+        {
+            //Add the next step in the lerp
+            timeStep += Time.deltaTime / currentTime;
+
+            //Lerp the position and rotation between the current and next transform
+            transform.position = Vector3.Lerp(posList[index], posList[index + 1], timeStep);
+            transform.rotation = Quaternion.Lerp(rotList[index], rotList[index + 1], timeStep);
+            yield return null;
+        }
+    }
+    
     //Sets the given world position list of the highlight as variable
     public void SetPosList(List<Vector3> initPosList)
     {
@@ -72,5 +83,11 @@ public class HighlightLifetimer : MonoBehaviour
     public void SetRotList(List<Quaternion> initRotList)
     {
         rotList = initRotList;
+    }
+
+    //Sets the given world rotation list of the highlight as variable
+    public void SetTimeList(List<TimeSpan> initTimeList)
+    {
+        timeList = initTimeList;
     }
 }
