@@ -9,6 +9,8 @@ public class HighlightLifetimer : MonoBehaviour
     private List<Quaternion>    rotList = new List<Quaternion>();       //List of all world rotations of the represented highlight
     private List<TimeSpan>      timeList = new List<TimeSpan>();        //List of all time positions of the represented highlight
 
+    private MediaPlayer         mp;                                     //
+
     private int                 index = 0;                              //The current index at which point this highlight representation is in the lists
     //private float               lerpTime = 0.1f;                        //The time period in seconds in which the object moves/rotates between two waypoints
     private float               currentTime = 0f;                       //The current time during the lerpTime
@@ -34,24 +36,27 @@ public class HighlightLifetimer : MonoBehaviour
         //Infinite loop
         while (true)
         {
-            //Set the current needed time for the lerp to the next time interval in milliseconds
-            currentTime = timeList[index + 1].Subtract(timeList[index]).Milliseconds / 1000;
-            
-            //Starts the transformation of the highlight object via lerp
-            yield return StartCoroutine(LerpToTransform());
-
-            //Check if the indey is the last possible index of the list
-            if (index >= posList.Count - 2)
+            if (mp.GetCurrentPos() == timeList[index])
             {
-                //Destroys the highlight object
-                Destroy(this.gameObject);
+                //Set the current needed time for the lerp to the next time interval in milliseconds
+                currentTime = timeList[index + 1].Subtract(timeList[index]).Milliseconds / 1000;
+
+                //Starts the transformation of the highlight object via lerp
+                yield return StartCoroutine(LerpToTransform());
+
+                //Check if the indey is the last possible index of the list
+                if (index >= posList.Count - 2)
+                {
+                    //Destroys the highlight object
+                    Destroy(this.gameObject);
+                }
+
+                //Increase the index by one
+                index++;
+
+                //Wait for the time period the lerp needs to transform the highlight object
+                yield return new WaitForSeconds(currentTime);
             }
-
-            //Increase the index by one
-            index++;
-
-            //Wait for the time period the lerp needs to transform the highlight object
-            yield return new WaitForSeconds(currentTime);
         }
     }
 
@@ -89,5 +94,11 @@ public class HighlightLifetimer : MonoBehaviour
     public void SetTimeList(List<TimeSpan> initTimeList)
     {
         timeList = initTimeList;
+    }
+
+    //Sets the given media player instance
+    public void SetMediaPlayer(MediaPlayer val)
+    {
+        mp = val;
     }
 }

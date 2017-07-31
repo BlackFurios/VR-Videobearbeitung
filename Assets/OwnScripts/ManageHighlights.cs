@@ -109,19 +109,15 @@ public class ManageHighlights : MonoBehaviour
         //Iterate through the list of all highlights
         foreach (Highlight h in hList)
         {
-            //Check if this highlight is around the time to be spawned and it has not current representation
-            if (AroundTimePosition(mp.GetCurrentPos(), h.getTime().First<TimeSpan>(), 50) && h.getObj() == null)
+            if (mp.GetCurrentPos() == h.getTime().First<TimeSpan>().Subtract(TimeSpan.FromMilliseconds(50)))
             {
-                //Spawn the highlight object
                 GameObject g = SpawnHighlight(h.getPos().First<Vector3>(), h.getRot().First<Quaternion>());
 
-                //Give the object both the world position and world rotation list
+                g.GetComponent<HighlightLifetimer>().SetMediaPlayer(mp);
+
                 g.GetComponent<HighlightLifetimer>().SetTimeList(h.getTime());
                 g.GetComponent<HighlightLifetimer>().SetPosList(h.getPos());
                 g.GetComponent<HighlightLifetimer>().SetRotList(h.getRot());
-
-                //Set the newly created gameObject as the representing object of this highlight
-                h.setObj(g);
             }
         }
     }
@@ -136,7 +132,7 @@ public class ManageHighlights : MonoBehaviour
         hList.Add(current);
     }
 
-    //Spawns highlightLight with if no other highlight collides with it
+    //Spawns highlight with if no other highlight collides with it
     public GameObject SpawnHighlightLight(Vector3 pos, Quaternion rot)
     {
         //Spawn the highlight
