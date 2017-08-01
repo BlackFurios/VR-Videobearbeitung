@@ -132,7 +132,7 @@ public class Control : MonoBehaviour
     {
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         //Check if the A-Button is pressed
-        if (Input.GetButtonDown("A-Windows"))
+        if (Input.GetButtonDown("A-Android"))
         {
 
         }
@@ -218,7 +218,7 @@ public class Control : MonoBehaviour
                 lastSpawn = mp.GetCurrentPos();
 
                 //Spawn a highlight to give feedback to the user
-                spawnObjectList.Add(mh.SpawnHighlightLight(initPos, initRot));
+                spawnObjectList.Add(mh.SpawnHighlight(initPos, initRot));
             }
         }
 
@@ -294,6 +294,9 @@ public class Control : MonoBehaviour
 
                         //Set the chosen video in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
+
+                        //Load saved highlights of the active video
+                        Load(list.options[list.value].text);
 
                         //Start the selected video
                         StartCoroutine(ShowTextForTime(mp.StartVideo()));
@@ -376,6 +379,9 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
+                //
+                Load(mp.GetMovieName());
+
                 //Start the new video
                 StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
@@ -413,6 +419,9 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
+                //
+                Load(mp.GetMovieName());
+
                 //Start the new video
                 StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
@@ -531,7 +540,7 @@ public class Control : MonoBehaviour
                 lastSpawn = mp.GetCurrentPos();
 
                 //Spawn a highlight to give feedback to the user
-                spawnObjectList.Add(mh.SpawnHighlightLight(initPos, initRot));
+                spawnObjectList.Add(mh.SpawnHighlight(initPos, initRot));
             }
         }
 
@@ -607,6 +616,9 @@ public class Control : MonoBehaviour
 
                         //Set the chosen video in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
+
+                        //Load saved highlights of the active video
+                        Load(list.options[list.value].text);
 
                         //Start the selected video
                         StartCoroutine(ShowTextForTime(mp.StartVideo()));
@@ -689,6 +701,9 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
+                //
+                Load(mp.GetMovieName());
+
                 //Start the new video
                 StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
@@ -726,6 +741,9 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
+                //
+                Load(mp.GetMovieName());
+
                 //Start the new video
                 StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }

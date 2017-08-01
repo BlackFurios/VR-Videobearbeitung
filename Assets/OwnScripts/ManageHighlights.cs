@@ -16,8 +16,6 @@ public class ManageHighlights : MonoBehaviour
 
     [SerializeField]
     private  GameObject             highLight;                                  //Highlight prefab to be managed
-    [SerializeField]
-    private GameObject              lightHighLight;                             //HighlightLight prefab to be managed
 
     private bool                    textShown = false;                          //Is currently a text shown
     private int                     showTime = 1;                               //How long texts should be shown in seconds
@@ -29,6 +27,7 @@ public class ManageHighlights : MonoBehaviour
         private List<Vector2>       texPos = new List<Vector2>();               //List of all texture positions of the highlight
         private List<TimeSpan>      time = new List<TimeSpan>();                //List of all time positions of the highlight
         private String              type;                                       //The type of the highlight
+        private int                 index;                                      //
 
         public GameObject     obj;                                              //List of currently shown highlights
 
@@ -40,6 +39,8 @@ public class ManageHighlights : MonoBehaviour
             texPos = initTexPos.ToList();
             time = initTime.ToList();
             type = initType;
+
+            index = 0;
         }
 
         //Returns the world position of the highlight
@@ -83,6 +84,18 @@ public class ManageHighlights : MonoBehaviour
         {
             obj = val;
         }
+
+        //
+        public int getIndex()
+        {
+            return index;
+        }
+
+        //
+        public void setIndex(int val)
+        {
+            index = val;
+        }
     };
 
     //Use this for initialization
@@ -109,15 +122,28 @@ public class ManageHighlights : MonoBehaviour
         //Iterate through the list of all highlights
         foreach (Highlight h in hList)
         {
-            if (mp.GetCurrentPos() == h.getTime().First<TimeSpan>().Subtract(TimeSpan.FromMilliseconds(50)))
+            if (mp.GetCurrentPos() > h.getTime()[h.getIndex()])
             {
-                GameObject g = SpawnHighlight(h.getPos().First<Vector3>(), h.getRot().First<Quaternion>());
+                Debug.Log("Highlight erzeugt ab " + h.getTime()[h.getIndex()]);
+                if (h.getObj() == null)
+                {
+                    h.setObj(SpawnHighlight(h.getPos()[h.getIndex()], h.getRot()[h.getIndex()]));
+                }
+                else if (h.getIndex() == (h.getPos().Count - 1))
+                {
+                    DestroyImmediate(h.getObj());
 
-                g.GetComponent<HighlightLifetimer>().SetMediaPlayer(mp);
+                    h.setObj(null);
 
-                g.GetComponent<HighlightLifetimer>().SetTimeList(h.getTime());
-                g.GetComponent<HighlightLifetimer>().SetPosList(h.getPos());
-                g.GetComponent<HighlightLifetimer>().SetRotList(h.getRot());
+                    h.setIndex(-1);
+                }
+                else
+                {
+                    h.getObj().transform.position = h.getPos()[h.getIndex()];
+                    h.getObj().transform.rotation = h.getRot()[h.getIndex()];
+                }
+
+                h.setIndex(h.getIndex() + 1);
             }
         }
     }
@@ -130,13 +156,6 @@ public class ManageHighlights : MonoBehaviour
 
         //Add new highlight to list of managed highlights
         hList.Add(current);
-    }
-
-    //Spawns highlight with if no other highlight collides with it
-    public GameObject SpawnHighlightLight(Vector3 pos, Quaternion rot)
-    {
-        //Spawn the highlight
-        return Instantiate(lightHighLight, pos, rot);
     }
 
     //Spawns highlight with if no other highlight collides with it
