@@ -10,51 +10,61 @@ using UnityEngine.UI;
 
 public class Control : MonoBehaviour
 {
-    private ManageHighlights mh;                                //Instance of the ManageHighlights script
-    private MediaPlayer mp;                                     //Instance of the MediaPlayer script
-    private EDLConverter ec;                                    //Instance of the EDLConverter script
+    private ManageHighlights    mh;                                             //Instance of the ManageHighlights script
+    private MediaPlayer         mp;                                             //Instance of the MediaPlayer script
+    private EDLConverter        ec;                                             //Instance of the EDLConverter script
+    private MenuMover           mm;                                             //Instance of the MenuMover script
 
-    private Dropdown list;                                      //Instance of the dropdown list object
+    private Dropdown            list;                                           //Instance of the dropdown list object
 
-    private Canvas vrMenu;                                      //Instance of the VRMenu object
-    private Canvas stMenu;                                      //Instance of the StartMenu object
+    private Canvas              vrMenu;                                         //Instance of the VRMenu object
+    private Canvas              stMenu;                                         //Instance of the StartMenu object
 
-    private RaycastHit hit;                                     //Point where the raycast hits
-    private int layerMask = 1 << 8;                             //LayerMask with layer of the highlights
+    private RaycastHit          hit;                                            //Point where the raycast hits
+    private int                 layerMask = 1 << 8;                             //LayerMask with layer of the highlights
     
-    private int selectedIndex;                                  //Dropdown index which the user has selected
+    private int                 selectedIndex;                                  //Dropdown index which the user has selected
 
-    private List<String> videoList = new List<string>();        //List of currently possible movies
-    
-    private bool opened = false;                                //Is the drodown list opened
-    private bool pausing = false;                               //Is the video currently paused
-    private bool timeShown = false;                             //Is currently a text shown
-    private int showTime = 1;                                   //How long texts should be shown in seconds
+    private List<String>        videoList = new List<string>();                 //List of currently possible movies
 
-    private float delTimer;                                     //Timer for long button press on X-Button
-    private float saveTimer;                                    //Timer for long button press on L2-Button
+    private List<Vector3>       spawnPosList = new List<Vector3>();             //The world position list of the currently created highlight
+    private List<Quaternion>    spawnRotList = new List<Quaternion>();          //The world rotation list of the currently created highlight
+    private List<Vector2>       spawnTexPosList = new List<Vector2>();          //The texture position list of the currently created highlight
+    private List<TimeSpan>      spawnTimeList = new List<TimeSpan>();           //The time positione list of the currently created highlight
 
-    private String savePath;                                    //Absolute path of the save files
-    private String edlPath;                                     //Absolute path of the edl files
+    private double              jumpRange = 10;                                 //The range in seconds in which the video will jump back
 
-    public class localId                                        //Struct for a highlight and its own local if (without next and prev parameters)
+    private int                 spawnRate = 100;                                //The spawn rate in which new highlight positions should be created (in milliseconds)
+    private TimeSpan            lastSpawn = TimeSpan.Zero;                      //The time position of the last highlight position that was created 
+
+    private bool                opened = false;                                 //Is the drodown list opened
+    private bool                pausing = false;                                //Is the video currently paused
+    private bool                timeShown = false;                              //Is currently a text shown
+    private int                 showTime = 1;                                   //How long texts should be shown in seconds
+
+    private bool                verticalDown = false;                           //Is one of the vertical DPad buttons pressed
+
+    private String              savePath;                                       //Absolute path of the save files
+    private String              edlPath;                                        //Absolute path of the edl files
+
+    public class localId                                                        //Struct for a highlight and its own local if (without next and prev parameters)
     {
-        public GameObject g;                                    //The highlight as gameObject
-        public String localID;                                  //The highlights localID
+        public ManageHighlights.Highlight g;                                    //The highlight
+        public String localID;                                                  //The highlights localID
 
-        public localId(GameObject a, String b)                  //Constructor of the localID struct
+        public localId(ManageHighlights.Highlight a, String b)                  //Constructor of the localID struct
         {
             g = a;
             localID = b;
         }
     }
 
-    public class nextId                                         //Struct for a highlight and its next highlight as id
+    public class nextId                                                         //Struct for a highlight and its next highlight as id
     {
-        public GameObject g;                                    //The highlight as gameObject
-        public String nextLocalID;                              //The highlights next highlight as its localID
+        public ManageHighlights.Highlight g;                                    //The highlight
+        public String nextLocalID;                                              //The highlights next highlight as its localID
 
-        public nextId(GameObject a, String b)                   //Constructor of the nextID struct
+        public nextId(ManageHighlights.Highlight a, String b)                   //Constructor of the nextID struct
         {
             g = a;
             nextLocalID = b;
@@ -101,6 +111,9 @@ public class Control : MonoBehaviour
             {
                 //Sets the VRMenu
                 vrMenu = c;
+
+                //Sets the menuMover script
+                mm = vrMenu.GetComponent<MenuMover>();
             }
 
             //Check if the currently found canvas is the StartMenu
@@ -125,7 +138,75 @@ public class Control : MonoBehaviour
         //Check if the A-Button is pressed
         if (Input.GetButtonDown("A-Android"))
         {
+            //Check if the StartMenu is enabled and the dropdown list is closed
+            if (stMenu.enabled == true && opened == false &&
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                switch (hit.transform.gameObject.name)
+                {
+                    //The dropdown list is selected
+                    case "VideoDropdown":
+                        //Open the dropdown list
+                        list.Show();
 
+                        //Give every Item own box collider
+                        for (int i = 1; i < list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.childCount; i++)
+                        {
+                            //Create a collider for every item in the dropdown list
+                            list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.AddComponent<BoxCollider>();
+                            list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.GetComponent<BoxCollider>().size = new Vector3(158, 28, 1);
+                        }
+
+                        //Notify that the dropdown list is currently opened
+                        opened = true;
+                        break;
+                    //The "Play Video" button is pressed
+                    case "PlayVideo":
+                        //Toggle the visibility and interaction of the StartMenu
+                        ConfigureMenu(stMenu, false);
+
+                        //Set the chosen video in the player and start the playback
+                        mp.SetMovieName(list.options[list.value].text);
+
+                        //Load saved highlights of the active video
+                        Load(list.options[list.value].text);
+
+                        //Start the selected video
+                        StartCoroutine(ShowTextForTime(mp.StartVideo()));
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            //Check if the StartMenu is enabled and the dropdown list is opened
+            if (stMenu.enabled == true && opened == true &&
+                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
+            {
+                //Check for all videos if the shown item is part of possible videos
+                foreach (String video in videoList)
+                {
+                    //Check if raycast hits a valid video option
+                    if (hit.transform.gameObject.name.Contains(video))
+                    {
+                        //Get item index from hitted objects name
+                        selectedIndex = int.Parse(Regex.Replace(hit.transform.gameObject.name.Substring(0, hit.transform.gameObject.name.IndexOf(":")), "[^0-9]", ""));
+
+                        //Set selected item as new top item
+                        list.value = selectedIndex;
+
+                        //Hide the dropdown list
+                        list.Hide();
+
+                        //Notify that the dropdown list is closed
+                        opened = false;
+                        break;
+                    }
+                }
+
+                //Refresh the dropdown list with new parameters
+                list.RefreshShownValue();
+            }
         }
 
         //Check if the B-Button is pressed
@@ -139,18 +220,11 @@ public class Control : MonoBehaviour
         //Check if the X-Button is pressed
         if (Input.GetButtonDown("X-Android"))
         {
-            //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
-                hit.transform.gameObject.name == "Highlight(Clone)")
-            {
-                //Delete selected highlight
-                mh.DeleteItem(hit.transform.gameObject);
-            }
-            else
-            {
-                //Clear complete highlight list and delete all highlights at once
-                mh.ClearList();
-            }  
+            //Calculate the time position at jumpRange before the current time position
+            double pos = mp.GetCurrentPos().TotalSeconds - jumpRange;
+
+            //Jump to the new time position 
+            mp.JumpToPos(pos);
         }
 
         //Check if the Y-Button is pressed
@@ -170,10 +244,17 @@ public class Control : MonoBehaviour
         }
 
         //Check if the R1-Button is pressed
-        if (Input.GetButton("R1-Android"))
+        if (Input.GetButtonDown("R1-Android"))
+        {
+
+        }
+
+        //Check if the R2-Button is pressed
+        if (Input.GetButton("R2-Android") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
         {
             //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name != "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) &&
+                hit.transform.gameObject.name != "Highlight(Clone)" && hit.transform.gameObject.name != "HighlightLight(Clone)")
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -183,32 +264,188 @@ public class Control : MonoBehaviour
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
-                //Starts creation of the new highlight
-                mh.AddItem(hit.point, mp.GetCurrentPos(), "Cut", coords);
+                //Add new parameters to spawn lists
+                Vector3 initPos = mh.CalculateHighlightPosition(hit.point);
+                spawnPosList.Add(initPos);
+                Quaternion initRot = mh.CalculateHighlightRotation();
+                spawnRotList.Add(initRot);
+                spawnTexPosList.Add(coords);
+                spawnTimeList.Add(mp.GetCurrentPos());
+
+                //Set the lastSpawn time position to the current time position
+                lastSpawn = mp.GetCurrentPos();
+
+                //Spawn a highlight to give feedback to the user
+                mh.SpawnHighlight(initPos, initRot);
             }
+        }
+
+        //Check if the R2-Button not pressed anymore
+        if (Input.GetButtonUp("R2-Android") && spawnPosList.Count != 0 && spawnRotList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
+        {
+            //Create highlight
+            mh.AddItem(spawnPosList, spawnRotList, spawnTexPosList, spawnTimeList, "Cut");
+
+            //Empty all spawn parameter lists
+            spawnPosList.Clear();
+            spawnRotList.Clear();
+            spawnTexPosList.Clear();
+            spawnTimeList.Clear();
+
+            //Notify user that a highlight was created
+            StartCoroutine(ShowTextForTime("Highlight created"));
         }
 
         //Check if the L1-Button is pressed
         if (Input.GetButtonDown("L1-Android"))
         {
-            //Check if the highlight list is empty
-            if (mh.GetList().Count == 0)
+            //Recenter the VRMenu
+            mm.CenterMenu();
+        }
+
+        //Check if the L"-Button is pressed
+        if (Input.GetButton("L2-Android"))
+        {
+            //Create a temporarily list from the highlight list
+            List<ManageHighlights.Highlight> tempList = mh.GetList();
+
+            //Create a temporarily TimeSpan from the current time position of the active video
+            TimeSpan delTime = mp.GetCurrentPos();
+
+            //Iterate through the temporarily created highlight list copy
+            for (int index = 0; index < tempList.Count; index++)
             {
-                //Show text to the user to inform him that the highlight list is empty
-                StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to create an EDL"));
-            }
-            else
-            {
-                //Create a edl file from the current highlights for the selected video
-                CreateEDL(mp.GetMovieName());
+                //Check if this highlight contains the deletion time
+                if (tempList[index].getTime().Contains(delTime))
+                {
+                    //Delete this highlight
+                    mh.DeleteHighlight(mh.GetItem(index));
+                }
             }
         }
 
-        //Check if the R2-Button is pressed
-        if (Input.GetButton("R2-Android"))
+        //Check if the up DPad-Button is pressed
+        if (Input.GetAxis("DPad-Vertical-Android") == 1 && !verticalDown)
         {
-            // Check if the StartMenu is enabled and the dropdown list is closed
-            if (stMenu.enabled == true && opened == false && 
+            verticalDown = true;
+
+            //Save the current status of highlights of the active video
+            Save(mp.GetMovieName());
+
+            //Check if the currently playing video is at its end
+            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
+            {
+                //Iterate through the list of all videos
+                for (int i = 0; i < mp.GetMovieList().Count; i++)
+                {
+                    //Check for the currently played video in the list of all videos
+                    if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
+                    {
+                        //Make the search circular
+                        int index = (i + 1) % mp.GetMovieList().Count;
+
+                        //Check if the index reached the end of the list
+                        if (index < 0)
+                        {
+                            //Let the index wrap around to make the list circular
+                            index += mp.GetMovieList().Count;
+                        }
+
+                        //Select the new selected video as ne active video
+                        mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                //Load the save or edl file for the new active video if existing
+                Load(mp.GetMovieName());
+
+                //Start the new video
+                StartCoroutine(ShowTextForTime(mp.StartVideo()));
+            }
+            else
+            {
+                //Jump to the end of the video
+                mp.JumpToPos((int)mp.GetMovieLength().TotalSeconds - 3);
+            }
+        }
+
+        //Check if the down DPad-Button is pressed
+        if (Input.GetAxis("DPad-Vertical-Android") == -1 && !verticalDown)
+        {
+            verticalDown = true;
+
+            //Save the current status of highlights of the active video
+            Save(mp.GetMovieName());
+
+            //Check if the currently playing video is at its beginning
+            if (mp.GetCurrentPos().TotalSeconds < 5)
+            {
+                //Iterate through the list of all videos
+                for (int i = 0; i < mp.GetMovieList().Count; i++)
+                {
+                    //Check for the currently played video in the list of all videos
+                    if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
+                    {
+                        //Make the search circular
+                        int index = (i - 1) % mp.GetMovieList().Count;
+
+                        //Check if the index reached the end of the list
+                        if (index < 0)
+                        {
+                            //Let the index wrap around to make the list circular
+                            index += mp.GetMovieList().Count;
+                        }
+
+                        //Select the new selected video as ne active video
+                        mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
+                        break;
+                    }
+                }
+                //Load the save or edl file for the new active video if existing
+                Load(mp.GetMovieName());
+
+                //Start the new video
+                StartCoroutine(ShowTextForTime(mp.StartVideo()));
+            }
+            else
+            {
+                //Rewind to the start of the video
+                StartCoroutine(ShowTextForTime(mp.Rewind()));
+            }
+        }
+
+        //Check if the vertical DPad-Buttons are not pressed anymore
+        if (Input.GetAxis("DPad-Vertical-Android") == 0)
+        {
+            verticalDown = false;
+        }
+
+        //Check if the right DPad-Button is pressed
+        if (Input.GetAxis("DPad-Horizontal-Android") > 0)
+        {
+            //Set the playback speed to double
+            mp.SetPlaybackSpeed(1);
+        }
+
+        //Check if the left DPad-Button is pressed
+        if (Input.GetAxis("DPad-Horizontal-Android") < 0)
+        {
+            //Set the playback speed to half
+            mp.SetPlaybackSpeed(2);
+        }
+
+        //Check if the horizontal DPad-Buttons are not pressed anymore
+        if (Input.GetAxis("DPad-Horizontal-Android") == 0)
+        {
+            //Set the playback speed to normal
+            mp.SetPlaybackSpeed(0);
+        }
+#else
+        //Check if the A-Button is pressed
+        if (Input.GetButtonDown("A-Windows"))
+        {
+            //Check if the StartMenu is enabled and the dropdown list is closed
+            if (stMenu.enabled == true && opened == false &&
                 Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 switch (hit.transform.gameObject.name)
@@ -234,11 +471,11 @@ public class Control : MonoBehaviour
                         //Toggle the visibility and interaction of the StartMenu
                         ConfigureMenu(stMenu, false);
 
-                        //Load save file for currently selected video
-                        Load(list.options[list.value].text);
-
                         //Set the chosen video in the player and start the playback
                         mp.SetMovieName(list.options[list.value].text);
+
+                        //Load saved highlights of the active video
+                        Load(list.options[list.value].text);
 
                         //Start the selected video
                         StartCoroutine(ShowTextForTime(mp.StartVideo()));
@@ -249,7 +486,7 @@ public class Control : MonoBehaviour
             }
 
             //Check if the StartMenu is enabled and the dropdown list is opened
-            if (stMenu.enabled == true && opened == true && 
+            if (stMenu.enabled == true && opened == true &&
                 Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check for all videos if the shown item is part of possible videos
@@ -278,123 +515,6 @@ public class Control : MonoBehaviour
             }
         }
 
-        //Check if the L"-Button is pressed
-        if (Input.GetButtonDown("L2-Android"))
-        {
-            //Check if the highlight list is empty
-            if (mh.GetList().Count == 0)
-            {
-                //Show text to the user to inform him that the highlight list is empty
-                StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to save a file"));
-            }
-            else
-            {
-                //Save the current state of all highlights for the selected video
-                Save(mp.GetMovieName());
-            }
-        }
-
-        //Check if the up DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Android") == 1)
-        {
-            //Check if the currently playing video is at its end
-            if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
-            {
-                //Iterate through the list of all videos
-                for (int i = 0; i < mp.GetMovieList().Count; i++)
-                {
-                    //Check for the currently played video in the list of all videos
-                    if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
-                    {
-                        //Make the search circular
-                        int index = (i + 1) % mp.GetMovieList().Count;
-
-                        //Check if the index reached the end of the list
-                        if (index < 0)
-                        {
-                            //Let the index wrap around to make the list circular
-                            index += mp.GetMovieList().Count;
-                        }
-
-                        //Select the new selected video as ne active video
-                        mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
-                        break;
-                    }
-                }
-                //Start the new video
-                StartCoroutine(ShowTextForTime(mp.StartVideo()));
-            }
-            else
-            {
-                //Jump to the end of the video
-                mp.JumpToPos((int)mp.GetMovieLength().TotalSeconds - 3);
-            }
-        }
-
-        //Check if the down DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Android") == -1)
-        {
-            //Check if the currently playing video is at its beginning
-            if (mp.GetCurrentPos().TotalSeconds < 5)
-            {
-                //Iterate through the list of all videos
-                for (int i = 0; i < mp.GetMovieList().Count; i++)
-                {
-                    //Check for the currently played video in the list of all videos
-                    if (mp.GetMovieListMovie(i).Substring(0, mp.GetMovieListMovie(i).LastIndexOf(".")) == mp.GetMovieName())
-                    {
-                        //Make the search circular
-                        int index = (i - 1) % mp.GetMovieList().Count;
-
-                        //Check if the index reached the end of the list
-                        if (index < 0)
-                        {
-                            //Let the index wrap around to make the list circular
-                            index += mp.GetMovieList().Count;
-                        }
-
-                        //Select the new selected video as ne active video
-                        mp.SetMovieName(mp.GetMovieListMovie(index).Substring(0, mp.GetMovieListMovie(index).LastIndexOf(".")));
-                        break;
-                    }
-                }
-                //Start the new video
-                StartCoroutine(ShowTextForTime(mp.StartVideo()));
-            }
-            else
-            {
-                //Rewind to the start of the video
-                StartCoroutine(ShowTextForTime(mp.Rewind()));
-            }
-        }
-
-        //Check if the right DPad-Button is pressed
-        if (Input.GetAxis("DPad-Horizontal-Android") > 0)
-        {
-            //Set the playback speed to double
-            mp.SetPlaybackSpeed(1);
-        }
-
-        //Check if the left DPad-Button is pressed
-        if (Input.GetAxis("DPad-Horizontal-Android") < 0)
-        {
-            //Set the playback speed to half
-            mp.SetPlaybackSpeed(2);
-        }
-
-        //Check if the vertical DPad-Buttons are not pressed anymore
-        if (Input.GetAxis("DPad-Horizontal-Android") == 0)
-        {
-            //Set the playback speed to normal
-            mp.SetPlaybackSpeed(0);
-        }
-#else
-        //Check if the A-Button is pressed
-        if (Input.GetButtonDown("A-Windows"))
-        {
-
-        }
-
         //Check if the B-Button is pressed
         if (Input.GetButtonDown("B-Windows"))
         {
@@ -406,18 +526,11 @@ public class Control : MonoBehaviour
         //Check if the X-Button is pressed
         if (Input.GetButtonDown("X-Windows"))
         {
-            //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
-                hit.transform.gameObject.name == "Highlight(Clone)")
-            {
-                //Delete selected highlight
-                mh.DeleteItem(hit.transform.gameObject);
-            }
-            else
-            {
-                //Clear complete highlight list and delete all highlights at once
-                mh.ClearList();
-            }  
+            //Calculate the time position at jumpRange before the current time position
+            double pos = mp.GetCurrentPos().TotalSeconds - jumpRange;
+
+            //Jump to the new time position 
+            mp.JumpToPos(pos);
         }
 
         //Check if the Y-Button is pressed
@@ -437,10 +550,17 @@ public class Control : MonoBehaviour
         }
 
         //Check if the R1-Button is pressed
-        if (Input.GetButton("R1-Windows"))
+        if (Input.GetButtonDown("R1-Windows"))
+        {
+
+        }
+
+        //Check if the R2-Button is pressed
+        if (Input.GetButton("R2-Windows") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
         {
             //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && hit.transform.gameObject.name != "Highlight(Clone)")
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name != "Highlight(Clone)" && hit.transform.gameObject.name != "HighlightLight(Clone)")
             {
                 //Get the correct texture coordinates on the video texture
                 Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
@@ -450,120 +570,78 @@ public class Control : MonoBehaviour
                 coords.x *= tex.width;
                 coords.y *= tex.height;
 
-                //Starts creation of the new highlight
-                mh.AddItem(hit.point, mp.GetCurrentPos(), "Cut", coords);
+                //Add new parameters to spawn lists
+                Vector3 initPos =  mh.CalculateHighlightPosition(hit.point);
+                spawnPosList.Add(initPos);
+                Quaternion initRot = mh.CalculateHighlightRotation();
+                spawnRotList.Add(initRot);
+                spawnTexPosList.Add(coords);
+                spawnTimeList.Add(mp.GetCurrentPos());
+
+                //Set the lastSpawn time position to the current time position
+                lastSpawn = mp.GetCurrentPos();
+
+                //Spawn a highlight to give feedback to the user
+                mh.SpawnHighlight(initPos, initRot);
             }
+        }
+
+        //Check if the R2-Button not pressed anymore
+        if (Input.GetButtonUp("R2-Windows") && spawnPosList.Count != 0 && spawnRotList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
+        {
+            //Create highlight
+            mh.AddItem(spawnPosList, spawnRotList, spawnTexPosList, spawnTimeList, "Cut");
+
+            //Empty all spawn parameter lists
+            spawnPosList.Clear();
+            spawnRotList.Clear();
+            spawnTexPosList.Clear();
+            spawnTimeList.Clear();
+
+            //Notify user that a highlight was created
+            StartCoroutine(ShowTextForTime("Highlight created"));
         }
 
         //Check if the L1-Button is pressed
         if (Input.GetButtonDown("L1-Windows"))
         {
-            //Check if the highlight list is empty
-            if (mh.GetList().Count == 0)
-            {
-                //Show text to the user to inform him that the highlight list is empty
-                StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to create an EDL"));
-            }
-            else
-            {
-                //Create a edl file from the current highlights for the selected video
-                CreateEDL(mp.GetMovieName());
-            }
-        }
-
-        //Check if the R2-Button is pressed
-        if (Input.GetButton("R2-Windows"))
-        {
-            //Check if the StartMenu is enabled and the dropdown list is closed
-            if (stMenu.enabled == true && opened == false && 
-                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
-            {
-                switch (hit.transform.gameObject.name)
-                {
-                    //The dropdown list is selected
-                    case "VideoDropdown":
-                        //Open the dropdown list
-                        list.Show();
-
-                        //Give every Item own box collider
-                        for (int i = 1; i < list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.childCount; i++)
-                        {
-                            //Create a collider for every item in the dropdown list
-                            list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.AddComponent<BoxCollider>();
-                            list.transform.GetChild(3).transform.GetChild(0).transform.GetChild(0).transform.GetChild(i).transform.gameObject.GetComponent<BoxCollider>().size = new Vector3(158, 28, 1);
-                        }
-
-                        //Notify that the dropdown list is currently opened
-                        opened = true;
-                        break;
-                    //The "Play Video" button is pressed
-                    case "PlayVideo":
-                        //Toggle the visibility and interaction of the StartMenu
-                        ConfigureMenu(stMenu, false);
-
-                        //Load save file for currently selected video
-                        Load(list.options[list.value].text);
-
-                        //Set the chosen video in the player and start the playback
-                        mp.SetMovieName(list.options[list.value].text);
-
-                        //Start the selected video
-                        StartCoroutine(ShowTextForTime(mp.StartVideo()));
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            //Check if the StartMenu is enabled and the dropdown list is opened
-            if (stMenu.enabled == true && opened == true && 
-                Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
-            {
-                //Check for all videos if the shown item is part of possible videos
-                foreach (String video in videoList)
-                {
-                    //Check if raycast hits a valid video option
-                    if (hit.transform.gameObject.name.Contains(video))
-                    {
-                        //Get item index from hitted objects name
-                        selectedIndex = int.Parse(Regex.Replace(hit.transform.gameObject.name.Substring(0, hit.transform.gameObject.name.IndexOf(":")), "[^0-9]", ""));
-
-                        //Set selected item as new top item
-                        list.value = selectedIndex;
-
-                        //Hide the dropdown list
-                        list.Hide();
-
-                        //Notify that the dropdown list is closed
-                        opened = false;
-                        break;
-                    }
-                }
-
-                //Refresh the dropdown list with new parameters
-                list.RefreshShownValue();
-            }
+            //Recenter the VRMenu
+            mm.CenterMenu();
         }
 
         //Check if the L"-Button is pressed
-        if (Input.GetButtonDown("L2-Windows"))
+        if (Input.GetButton("L2-Windows"))
         {
-            //Check if the highlight list is empty
-            if (mh.GetList().Count == 0)
+            Debug.Log("Löschen aktiv");
+
+            //Create a temporarily list from the highlight list
+            List<ManageHighlights.Highlight> tempList = mh.GetList();
+
+            //Create a temporarily TimeSpan from the current time position of the active video
+            TimeSpan delTime = mp.GetCurrentPos();
+
+            //Iterate through the temporarily created highlight list copy
+            for (int index = 0; index < tempList.Count; index++)
             {
-                //Show text to the user to inform him that the highlight list is empty
-                StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to save a file"));
-            }
-            else
-            {
-                //Save the current state of all highlights for the selected video
-                Save(mp.GetMovieName());
+                //Check if this highlight contains the deletion time
+                if (tempList[index].getTime().Contains(delTime))
+                {
+                    Debug.Log("Highlight wurde gelöscht");
+
+                    //Delete this highlight
+                    mh.DeleteHighlight(mh.GetItem(index));
+                }
             }
         }
 
         //Check if the up DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Windows") == 1)
+        if (Input.GetAxis("DPad-Vertical-Windows") == 1 && !verticalDown)
         {
+            verticalDown = true;
+
+            //Save the current status of highlights of the active video
+            Save(mp.GetMovieName());
+
             //Check if the currently playing video is at its end
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
             {
@@ -588,6 +666,9 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
+                //Load the save or edl file for the new active video if existing
+                Load(mp.GetMovieName());
+
                 //Start the new video
                 StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
@@ -599,8 +680,13 @@ public class Control : MonoBehaviour
         }
 
         //Check if the down DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Windows") == -1)
+        if (Input.GetAxis("DPad-Vertical-Windows") == -1 && !verticalDown)
         {
+            verticalDown = true;
+
+            //Save the current status of highlights of the active video
+            Save(mp.GetMovieName());
+
             //Check if the currently playing video is at its beginning
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
@@ -625,6 +711,9 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
+                //Load the save or edl file for the new active video if existing
+                Load(mp.GetMovieName());
+
                 //Start the new video
                 StartCoroutine(ShowTextForTime(mp.StartVideo()));
             }
@@ -633,6 +722,12 @@ public class Control : MonoBehaviour
                 //Rewind to the start of the video
                 StartCoroutine(ShowTextForTime(mp.Rewind()));
             }
+        }
+
+        //Check if the vertical DPad-Buttons are not pressed anymore
+        if (Input.GetAxis("DPad-Vertical-Windows") == 0)
+        {
+            verticalDown = false;
         }
 
         //Check if the right DPad-Button is pressed
@@ -649,7 +744,7 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(2);
         }
 
-        //Check if the vertical DPad-Buttons are not pressed anymore
+        //Check if the horizontal DPad-Buttons are not pressed anymore
         if (Input.GetAxis("DPad-Horizontal-Windows") == 0)
         {
             //Set the playback speed to normal
@@ -697,14 +792,8 @@ public class Control : MonoBehaviour
             sw.WriteLine("FCM: NON-DROP FRAME");
             sw.WriteLine();
 
-            //List of all already checked highlights
-            List<GameObject> usedHl = new List<GameObject>();
-
             //The currently checked highlight
-            GameObject current;
-
-            //Line count
-            int lineCnt = 1;
+            ManageHighlights.Highlight current;
 
             //The type of the highlight (Cut, Dissolve, Wipe)
             String type;
@@ -718,54 +807,28 @@ public class Control : MonoBehaviour
             TimeSpan recOUT = TimeSpan.Zero;
 
             //Iterate through all spawned highlights
-            for (int i = 0; i < mh.GetList().Count; i++)
+            for (int i = 1; i <= mh.GetList().Count; i++)
             {
                 //Set the currently checked item as the current item of the list of highlights
-                current = mh.GetItem(i);
+                current = mh.GetItem(i - 1);
 
-                //Check if the currently checked highlight is not used already
-                if (!usedHl.Contains(current))
-                {
-                    //Get all highlight that are related to another (Determine a possible chain)
-                    List<GameObject> chain = mh.CreateItemChain(current);
+                //Set the source start point and source end point of the clip of the single highlight
+                srcIN = current.getTime().First<TimeSpan>();
+                srcOUT = current.getTime().Last<TimeSpan>();
 
-                    //Cheeck if it is a chain or a single highlight
-                    if (chain.Count == 1)
-                    {
-                        //Set the source start point and source end point of the clip of the single highlight
-                        srcIN = current.GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(2));
-                        srcOUT = current.GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(2));
+                //Set the type
+                type = current.getType();
 
-                        //Set the type
-                        type = current.GetComponent<HighlightMemory>().getType();
-                    }
-                    else
-                    {
-                        //Set the source start point and source end point of the clip of the chain
-                        srcIN = chain.First<GameObject>().GetComponent<HighlightMemory>().getTime().Subtract(TimeSpan.FromSeconds(1));
-                        srcOUT = chain.Last<GameObject>().GetComponent<HighlightMemory>().getTime().Add(TimeSpan.FromSeconds(1));
+                //Set the end point of the clip
+                recOUT += srcOUT.Subtract(srcIN);
 
-                        //Set the type
-                        type = chain.First<GameObject>().GetComponent<HighlightMemory>().getType();
-                    }
+                //Convert the given parameters to a complete edl line
+                sw.WriteLine(ec.ConvertToEdlLine(i, 0, type, srcIN, srcOUT, recIN, recOUT));
+                sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
+                sw.WriteLine();
 
-                    //Set the end point of the clip
-                    recOUT += srcOUT.Subtract(srcIN);
-
-                    //Add the recently used highlights to the used highlights list
-                    usedHl.AddRange(chain);
-
-                    //Convert the given parameters to a complete edl line
-                    sw.WriteLine(ec.ConvertToEdlLine(lineCnt, 0, type, srcIN, srcOUT, recIN, recOUT));
-                    sw.WriteLine("* FROM CLIP NAME: " + video.ToUpper() + ".MP4");
-                    sw.WriteLine();
-
-                    //Set the start point of the new clip at the end of the last clip
-                    recIN += recOUT.Subtract(recIN);
-
-                    //Increase the line count
-                    lineCnt += 1;
-                }
+                //Set the start point of the new clip at the end of the last clip
+                recIN += recOUT.Subtract(recIN);
             }
 
             //Close the streamwriter
@@ -791,9 +854,9 @@ public class Control : MonoBehaviour
         String filePath = edlPath + "/" + video + ".edl";
 
         //Check if file is already created
-        if (!File.Exists(filePath))
+        if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
         {
-
+            Debug.Log("No file found. New file will be created.");
         }
         else
         {
@@ -818,23 +881,27 @@ public class Control : MonoBehaviour
                     //The extracted parameters of the analysed edl line (transition, mode, srcIN, srcOUT, etc)
                     String[] parameters = new String[5];
 
+                    List<TimeSpan> hlTime = new List<TimeSpan>();
+
                     //Iterate through the body
                     foreach (String str in body)
                     {
                         //All words of the analysed edl line seperated from each other
-                        String[] words = str.Split(whitespace);
-                        
+                        String[] words = str.Split(whitespace, StringSplitOptions.RemoveEmptyEntries);
+
                         switch(words[0])
                         {
                             //Check if the currently analysed line is the first line of the edl file
                             case "TITLE:":
+                                Debug.Log("Title will be ignored");
                                 break;
                             //Check if the currently analysed line is the second line of the edl file
                             case "FCM:":
+                                Debug.Log("Frame Mode will be ignored");
                                 break;
                             //Check if the currently analysed line is a FROM CLIP NAME: <videofile>
                             case "*":
-                                extrVideo = words[4];
+                                extrVideo = words[4].Substring(0, words[4].IndexOf('.'));
                                 break;
                             //Check if the currently analysed line is a effect line (Those are currently ignored)
                             case "M2":
@@ -848,20 +915,32 @@ public class Control : MonoBehaviour
                     }
 
                     //Check if the new highlight/chain is for the currently active video
-                    if (extrVideo.Substring(0, extrVideo.LastIndexOf(".")).ToUpper() == video.ToUpper())
+                    if (extrVideo.ToUpper() == video.ToUpper())
                     {
+                        //Parse the TimeSpan string to a valid TimeSpan
+                        parameters[3] = parameters[3].Substring(0, parameters[3].LastIndexOf(':')) + "." + parameters[3].Substring(parameters[3].LastIndexOf(':') + 1);
+
                         //Set currentTime to the start time of the highlight/chain
                         TimeSpan currentTime = TimeSpan.Parse(parameters[3]);
 
+                        //Add the next time position to the list of all time positions of the highlight
+                        hlTime.Add(currentTime);
+
+                        //Parse the TimeSpan string to a valid TimeSpan
+                        parameters[4] = parameters[4].Substring(0, parameters[4].LastIndexOf(':')) + "." + parameters[4].Substring(parameters[4].LastIndexOf(':') + 1);
+
                         //While the line has not ended spawn new highlights
-                        while(currentTime < TimeSpan.Parse(parameters[4]))
+                        while (currentTime < TimeSpan.Parse(parameters[4]))
                         {
                             //Set currentTime to the next time position (currentTime + 0.5 seconds)
-                            currentTime.Add(TimeSpan.FromMilliseconds(500));
+                            currentTime.Add(TimeSpan.FromMilliseconds(spawnRate));
 
-                            //Spawn single highlight
-                            mh.AddItem(new Vector3(0,0,0), currentTime, parameters[2], new Vector2(0,0));
+                            //Add the next time position to the list of all time positions of the highlight
+                            hlTime.Add(currentTime);
                         }
+                        Debug.Log("Highlight erstellt");
+                        //Create a highlight from the parameters
+                        mh.AddItem(new List<Vector3>(), new List<Quaternion>(), new List<Vector2>(), hlTime, parameters[2]);
                     }
 
                     //Clear the complete body after creating the necessary highlights
@@ -880,12 +959,12 @@ public class Control : MonoBehaviour
     }
 
     //Returns the transition mode for the selected highlight/chain
-    int GetTransitionNumber(GameObject highlight)
+    int GetTransitionNumber(ManageHighlights.Highlight highlight)
     {
         int trans;
 
         //Define the type of highlight for the edl (3 types possible)
-        switch (highlight.GetComponent<HighlightMemory>().getType())
+        switch (highlight.getType())
         {
             //2 -> Wipe
             case "Wipe":
@@ -905,8 +984,15 @@ public class Control : MonoBehaviour
     }
 
     //Saves the highlights of the video into a *.hl file
-    void Save(String video)
+    public void Save(String video)
     {
+        //Check if the video name has a file suffix
+        if (video.Contains('.'))
+        {
+            //Remove the suffix of the video name (exp.: ".mp4")
+            video = video.Substring(0, video.LastIndexOf('.'));
+        }
+
         //Show the user it started the saving process
         StartCoroutine(ShowTextForTime(video + " is saving..."));
 
@@ -934,17 +1020,59 @@ public class Control : MonoBehaviour
         if (mh.GetList().Count > 0)
         {
             //Write for each highlight a line of parameters in the save file
-            foreach (GameObject g in mh.GetList())
+            foreach (ManageHighlights.Highlight g in mh.GetList())
             {
-                String str = String.Empty;
+                String str = "";
 
-                //Construct a string from the highlight parameters
-                str += g.transform.position;
-                str += "|" + g.GetComponent<HighlightMemory>().getTime();
-                str += "|" + g.GetComponent<HighlightMemory>().getType();
-                str += "|" + g.GetComponent<HighlightMemory>().getTexPos();
+                //Iterate through all world positions in the world position list of the highlight
+                foreach (Vector3 pos in g.getPos())
+                {
+                    //Add the current world position to the save string
+                    str += pos + ";";
+                }
+                //Delete last semicolon of the list
+                str = str.Remove(str.Length - 1);
 
-                //Write the constructed string to the file
+                //Add a pipe as separation mark
+                str += "|";
+
+                //Iterate through all world roatations in the world position list of the highlight
+                foreach (Quaternion rot in g.getRot())
+                {
+                    //Add the current world rotation to the save string
+                    str += rot + ";";
+                }
+                //Delete last semicolon of the list
+                str = str.Remove(str.Length - 1);
+
+                //Add a pipe as separation mark
+                str += "|";
+
+                //Iterate through all texture positions in the texture position list of the highlight
+                foreach (Vector2 texPos in g.getTexPos())
+                {
+                    //Add the current texture position to the save string
+                    str += texPos + ";";
+                }
+                //Delete last semicolon of the list
+                str = str.Remove(str.Length - 1);
+
+                //Add a pipe as separation mark
+                str += "|";
+
+                //Iterate through all time positions in the time position list of the highlight
+                foreach (TimeSpan time in g.getTime())
+                {
+                    //Add the current time position to the save string
+                    str += time + ";";
+                }
+                //Delete last semicolon of the list
+                str = str.Remove(str.Length - 1);
+
+                //Add a pipe as separation mark
+                str += "|" + g.getType();
+
+                //Write the constructed save string to the file
                 sw.WriteLine(str);
             }
 
@@ -953,6 +1081,9 @@ public class Control : MonoBehaviour
 
             //Show the user it finished the saving process
             StartCoroutine(ShowTextForTime(video + " is saved"));
+
+            //Additionally creates the edl file for the current save file
+            CreateEDL(video);
         }
         else
         {
@@ -962,8 +1093,18 @@ public class Control : MonoBehaviour
     }
 
     //Load the previously saved highlights for the active video
-    void Load(String video)
+    public void Load(String video)
     {
+        //Check if the video name has a file suffix
+        if (video.Contains('.'))
+        {
+            //Remove the suffix of the video name (exp.: ".mp4")
+            video = video.Substring(0, video.LastIndexOf('.'));
+        }
+
+        //Clear a possibly pre-existing highlight list and destroy all showed highlights
+        mh.DeleteAllHighlights();
+
         //Show the user it started the loading process
         StartCoroutine(ShowTextForTime(video + " is loading..."));
 
@@ -971,7 +1112,7 @@ public class Control : MonoBehaviour
         String filePath = savePath + "/" + video + ".hl";
 
         //Check if file is already created
-        if (!File.Exists(filePath))
+        if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
         {
             //Instead try to open a edl file
             OpenEDL(video);
@@ -979,7 +1120,7 @@ public class Control : MonoBehaviour
         else
         {
             //Read all lines from the found file
-            String[] content = File.ReadAllLines(filePath);
+            string[] content = File.ReadAllLines(filePath);
 
             //Iterate through all lines of the file
             foreach (String line in content)
@@ -987,69 +1128,151 @@ public class Control : MonoBehaviour
                 String shortLine = line;
 
                 //Extract the world position part of the line string
-                String posStr = shortLine.Substring(0, shortLine.IndexOf("|"));
+                String posListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
-                //Parse the world possition string into a Vector3
-                Vector3 pos = ParseStringToVector3(posStr);
+                //Parse the world position string into a Vector3
+                List<Vector3> posList = ParseStringToVector3List(posListStr);
 
-                //Extract the time part of the line string
-                String timeStr = shortLine.Substring(0, shortLine.IndexOf("|"));
+                //Extract the world rotation part of the line string
+                String rotListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
-                //Parse the time string into a TimeSpan
-                TimeSpan time = TimeSpan.Parse(timeStr);
+                //Parse the world rotation string into a Vector3
+                List<Quaternion> rotList = ParseStringToQuaternionList(rotListStr);
 
-                //Extract the type part of the line string
-                String type = shortLine.Substring(0, shortLine.IndexOf("|"));
+                //Extract the texture position part of the line string
+                String texPosListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
                 shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
 
                 //Extract the texture position part of the line string and parse it into a Vector2
-                Vector2 texPos = ParseStringToVector2(shortLine);
-                
-                //Create the highlight from the string
-                mh.AddItem(pos, time, type, texPos);
-            }
+                List<Vector2> texPosList = ParseStringToVector2List(texPosListStr);
 
+                //Extract the time part of the line string
+                String timeListStr = shortLine.Substring(0, shortLine.IndexOf("|"));
+                shortLine = shortLine.Substring(shortLine.IndexOf("|") + 1);
+
+                //Parse the time string into a TimeSpan
+                List<TimeSpan> timeList = ParseStringToTimeSpanList(timeListStr);
+
+                //Extract the type part of the line string
+                String type = shortLine;
+
+
+
+                //Create the highlight from the string
+                mh.AddItem(posList, rotList, texPosList, timeList, type);
+            }
+            Debug.Log("Anzahl erstellter Highlights: " + mh.GetList().Count);
             //Show the user it finished the loading process
             StartCoroutine(ShowTextForTime(video + " is loaded"));
         }
     }
 
-    //Parses a given string to a Vector2
-    Vector2 ParseStringToVector2(String str)
+    //Parses a given string to a Quaternion list
+    List<Quaternion> ParseStringToQuaternionList(String str)
     {
-        //Check if the vector string is in brackets
-        if (str.StartsWith("(") && str.EndsWith(")"))
+        List<Quaternion> result = new List<Quaternion>();
+
+        //Split the String in its single rotation items
+        String[] rotList = str.Split(';');
+
+        //Iterate through all found vector items in the list
+        foreach (String item in rotList)
         {
-            //Delete both brackets from the end and the start of the string
-            str = str.Substring(1, str.Length-2);
+            String rot = item;
+
+            //Check if the vector string is in brackets
+            if (rot.StartsWith("(") && rot.EndsWith(")"))
+            {
+                //Delete both brackets from the end and the start of the string
+                rot = rot.Substring(1, rot.Length - 2);
+            }
+
+            //Split the position string into the x and the y coordinate
+            String[] array = rot.Split(',');
+
+            //Create the Vector2 from both coordinate strings
+            result.Add(new Quaternion(float.Parse(array[0]), float.Parse(array[1]), float.Parse(array[2]), float.Parse(array[3])));
         }
-
-        //Split the position string into the x and the y coordinate
-        String[] array = str.Split(',');
-
-        //Create the Vector2 from both coordinate strings
-        Vector2 result = new Vector2(float.Parse(array[0]), float.Parse(array[1]));
 
         return result;
     }
 
-    //Parses a given string to a Vector3
-    Vector3 ParseStringToVector3(String str)
+    //Parses a given string to a Vector2 list
+    List<Vector2> ParseStringToVector2List(String str)
     {
-        //Check if the vector string is in brackets
-        if (str.StartsWith("(") && str.EndsWith(")"))
+        List<Vector2> result = new List<Vector2>();
+
+        //Split the String in its single position items
+        String[] texPosList = str.Split(';');
+
+        //Iterate through all found vector items in the list
+        foreach (String item in texPosList)
         {
-            //Delete both brackets from the end and the start of the string
-            str = str.Substring(1, str.Length-2);
+            String texPos = item;
+
+            //Check if the vector string is in brackets
+            if (texPos.StartsWith("(") && texPos.EndsWith(")"))
+            {
+                //Delete both brackets from the end and the start of the string
+                texPos = texPos.Substring(1, texPos.Length - 2);
+            }
+
+            //Split the position string into the x and the y coordinate
+            String[] array = texPos.Split(',');
+
+            //Create the Vector2 from both coordinate strings
+            result.Add(new Vector2(float.Parse(array[0]), float.Parse(array[1])));
         }
 
-        //Split the position string into the x, y and z coordinate
-        String[] array = str.Split(',');
+        return result;
+    }
 
-        //Create the Vector§ from all three coordinate strings
-        Vector3 result = new Vector3(float.Parse(array[0]), float.Parse(array[1]), float.Parse(array[2]));
+    //Parses a given string to a Vector3 list
+    List<Vector3> ParseStringToVector3List(String str)
+    {
+        List<Vector3> result = new List<Vector3>();
+
+        //Split the String in its single position items
+        String[] posList = str.Split(';');
+
+        //Iterate through all found vector items in the list
+        foreach (String item in posList)
+        {
+            String pos = item;
+
+            //Check if the vector string is in brackets
+            if (pos.StartsWith("(") && pos.EndsWith(")"))
+            {
+                //Delete both brackets from the end and the start of the string
+                pos = pos.Substring(1, pos.Length - 2);
+            }
+
+            //Split the position string into the x and the y coordinate
+            String[] array = pos.Split(',');
+
+            //Create the Vector2 from both coordinate strings
+            result.Add(new Vector3(float.Parse(array[0]), float.Parse(array[1]), float.Parse(array[2])));
+        }
+
+        return result;
+    }
+
+    //Parses a given string to a TimeSpan list
+    List<TimeSpan> ParseStringToTimeSpanList(String str)
+    {
+        List<TimeSpan> result = new List<TimeSpan>();
+
+        //Split the String in its single position items
+        String[] timeList = str.Split(';');
+
+        //Iterate through all found vector items in the list
+        foreach (String item in timeList)
+        {
+            //Create the TimeSpan from the string
+            result.Add(TimeSpan.Parse(item));
+        }
 
         return result;
     }
@@ -1060,12 +1283,8 @@ public class Control : MonoBehaviour
         //Iterate through all direct children of the menu
         foreach (Transform child in menu.transform)
         {
-            //Check if the current found child is the DisconnectMenu
-            if (child.name != "DisconnectMenu")
-            {
-                //Enable/Disable the collider on the buttons of the menu
-                child.GetComponent<Collider>().enabled = status;
-            }
+            //Enable/Disable the collider on the buttons of the menu
+            child.GetComponent<Collider>().enabled = status;
         }
 
         //Enable/Disable this menu

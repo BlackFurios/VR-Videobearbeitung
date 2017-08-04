@@ -12,7 +12,7 @@ InputManager:
     negativeButton: 
     positiveButton: joystick button 0
     altNegativeButton: 
-    altPositiveButton: 
+    altPositiveButton: left
     gravity: 1000
     dead: 0
     sensitivity: 1000
@@ -27,22 +27,6 @@ InputManager:
     descriptiveNegativeName: 
     negativeButton: 
     positiveButton: joystick button 1
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 0
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Y-Windows
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 4
     altNegativeButton: 
     altPositiveButton: 
     gravity: 1000
@@ -70,11 +54,43 @@ InputManager:
     axis: 0
     joyNum: 0
   - serializedVersion: 3
+    m_Name: Y-Windows
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 4
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
     m_Name: R1-Windows
     descriptiveName: 
     descriptiveNegativeName: 
     negativeButton: 
     positiveButton: joystick button 7
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: L1-Windows
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 6
     altNegativeButton: 
     altPositiveButton: 
     gravity: 1000
@@ -99,22 +115,6 @@ InputManager:
     snap: 0
     invert: 0
     type: 0
-    axis: 2
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: L1-Windows
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 6
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
     axis: 0
     joyNum: 0
   - serializedVersion: 3
@@ -131,279 +131,7 @@ InputManager:
     snap: 0
     invert: 0
     type: 0
-    axis: 2
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Oculus_GearVR_LThumbstickX
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 0
-    type: 2
     axis: 0
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Oculus_GearVR_LThumbstickY
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 1
-    type: 2
-    axis: 1
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Oculus_GearVR_RThumbstickX
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 0
-    type: 2
-    axis: 2
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Oculus_GearVR_RThumbstickY
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 1
-    type: 2
-    axis: 3
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Oculus_GearVR_DpadX
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 0
-    type: 2
-    axis: 4
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Oculus_GearVR_DpadY
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 1
-    type: 2
-    axis: 5
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Oculus_GearVR_LIndexTrigger
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 0
-    type: 2
-    axis: 12
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Oculus_GearVR_RIndexTrigger
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 0
-    type: 2
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: A-Android
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 0
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: B-Android
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 1
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: Y-Android
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 3
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: X-Android
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 2
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: R1-Android
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 5
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: R2-Android
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 7
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: L1-Android
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 4
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: L2-Android
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 6
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 11
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: DPad-Horizontal-Windows
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 0
-    dead: 0.001
-    sensitivity: 1
-    snap: 0
-    invert: 0
-    type: 2
-    axis: 4
     joyNum: 0
   - serializedVersion: 3
     m_Name: DPad-Vertical-Windows
@@ -422,39 +150,7 @@ InputManager:
     axis: 5
     joyNum: 0
   - serializedVersion: 3
-    m_Name: LeftThumpstick-Windows
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 13
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 0
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: RightThumpstick-Windows
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: joystick button 14
-    altNegativeButton: 
-    altPositiveButton: 
-    gravity: 1000
-    dead: 0
-    sensitivity: 1000
-    snap: 0
-    invert: 0
-    type: 0
-    axis: 0
-    joyNum: 0
-  - serializedVersion: 3
-    m_Name: DPad-Horizontal-Android
+    m_Name: DPad-Horizontal-Windows
     descriptiveName: 
     descriptiveNegativeName: 
     negativeButton: 
@@ -468,6 +164,134 @@ InputManager:
     invert: 0
     type: 2
     axis: 4
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: A-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 0
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: B-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 1
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: X-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 2
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: Y-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 3
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: R1-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 5
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: L1-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 4
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: R2-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 7
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: L2-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: joystick button 6
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 1000
+    dead: 0
+    sensitivity: 1000
+    snap: 0
+    invert: 0
+    type: 0
+    axis: 0
     joyNum: 0
   - serializedVersion: 3
     m_Name: DPad-Vertical-Android
@@ -484,4 +308,20 @@ InputManager:
     invert: 0
     type: 2
     axis: 5
+    joyNum: 0
+  - serializedVersion: 3
+    m_Name: DPad-Horizontal-Android
+    descriptiveName: 
+    descriptiveNegativeName: 
+    negativeButton: 
+    positiveButton: 
+    altNegativeButton: 
+    altPositiveButton: 
+    gravity: 0
+    dead: 0.001
+    sensitivity: 1
+    snap: 0
+    invert: 0
+    type: 2
+    axis: 4
     joyNum: 0

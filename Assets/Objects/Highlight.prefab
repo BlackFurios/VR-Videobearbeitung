@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33884317786521130}
   - component: {fileID: 23163877255969402}
   - component: {fileID: 64808452900488552}
-  - component: {fileID: 114371268345753560}
+  - component: {fileID: 114447701820551828}
   m_Layer: 8
   m_Name: Highlight
   m_TagString: Untagged
@@ -96,7 +96,7 @@ MeshCollider:
   m_InflateMesh: 0
   m_SkinWidth: 0.01
   m_Mesh: {fileID: 4300000, guid: 99537abbc570c754089ebb7cb014d7a9, type: 3}
---- !u!114 &114371268345753560
+--- !u!114 &114447701820551828
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
@@ -104,8 +104,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1232875005913234}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5143a47e3ccf5cb47b5186a04b5d0e27, type: 3}
+  m_Script: {fileID: 11500000, guid: 5ca007c43519f4d46a3929839962181b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 
-  texPos: {x: 0, y: 0}

@@ -33,4 +33,11 @@ public class MenuMover : MonoBehaviour
             prevAngle = angle;
         }
     }
+
+    //Sets the angle and prevAngle to the current camera look rotation
+    public void CenterMenu()
+    {
+        angle = cam.transform.rotation.eulerAngles.y;
+        prevAngle = cam.transform.rotation.eulerAngles.y;
+    }
 }
