@@ -70,7 +70,7 @@ public class MediaPlayer : MonoBehaviour
 {
     private Canvas              vrMenu;                                 //Instance of the VRMenu object
 
-    private Control             cr;                                     //
+    private Control             cr;                                     //Instance of the Control script
 
     private bool                timeShown = false;                      //Is currently a text shown
     private int                 showTime = 1;                           //How long texts should be shown in seconds
@@ -238,6 +238,8 @@ public class MediaPlayer : MonoBehaviour
         {
             if (GetCurrentPos() != TimeSpan.Zero && GetCurrentPos() == GetMovieLength())
             {
+                cr.Save(GetMovieName());
+
                 for (int i = 0; i < GetMovieList().Count; i++)
                 {
                     if (GetMovieListMovie(i).Substring(0, GetMovieListMovie(i).LastIndexOf(".")) == GetMovieName())
@@ -313,7 +315,7 @@ public class MediaPlayer : MonoBehaviour
     }
 
     //Jumps to a specific time position in the currently active video
-    public void JumpToPos(int pos)
+    public void JumpToPos(double pos)
     {
         //Check if the VideoPlayer is null
         if (vp != null)

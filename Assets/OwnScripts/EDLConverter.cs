@@ -47,16 +47,16 @@ public class EDLConverter : MonoBehaviour
         str += ConvertModeToEDL(mode);
 
         //Create the fifth clolumn (expl: 00:00:00:00, 00:00:10:00)
-        str += FormatTimeSpan(srcIN) + " ";
+        str += FormatFromTimeSpan(srcIN) + " ";
 
         //Create the sixth clolumn (expl: 00:00:10:00, 00:11:04:00)
-        str += FormatTimeSpan(srcOUT) + " ";
+        str += FormatFromTimeSpan(srcOUT) + " ";
 
         //Create the seventh clolumn (expl: 00:00:00:00, 00:00:10:00)
-        str += FormatTimeSpan(recIN) + " ";
+        str += FormatFromTimeSpan(recIN) + " ";
 
         //Create the eighth clolumn (expl: 00:00:10:00, 00:11:04:00)
-        str += FormatTimeSpan(recOUT);
+        str += FormatFromTimeSpan(recOUT);
 
         return str;
     }
@@ -154,7 +154,7 @@ public class EDLConverter : MonoBehaviour
     }
 
     //Returns a formatted string to use in an edl line from the given TimeSpan
-    private String FormatTimeSpan(TimeSpan time)
+    private String FormatFromTimeSpan(TimeSpan time)
     {
         String output = time.ToString();
 

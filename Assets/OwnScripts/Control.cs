@@ -13,6 +13,7 @@ public class Control : MonoBehaviour
     private ManageHighlights    mh;                                             //Instance of the ManageHighlights script
     private MediaPlayer         mp;                                             //Instance of the MediaPlayer script
     private EDLConverter        ec;                                             //Instance of the EDLConverter script
+    private MenuMover           mm;                                             //Instance of the MenuMover script
 
     private Dropdown            list;                                           //Instance of the dropdown list object
 
@@ -30,7 +31,8 @@ public class Control : MonoBehaviour
     private List<Quaternion>    spawnRotList = new List<Quaternion>();          //The world rotation list of the currently created highlight
     private List<Vector2>       spawnTexPosList = new List<Vector2>();          //The texture position list of the currently created highlight
     private List<TimeSpan>      spawnTimeList = new List<TimeSpan>();           //The time positione list of the currently created highlight
-    private List<GameObject>    spawnObjectList = new List<GameObject>();       //The object list of the currently created highlight
+
+    private double              jumpRange = 10;                                 //The range in seconds in which the video will jump back
 
     private int                 spawnRate = 100;                                //The spawn rate in which new highlight positions should be created (in milliseconds)
     private TimeSpan            lastSpawn = TimeSpan.Zero;                      //The time position of the last highlight position that was created 
@@ -40,8 +42,7 @@ public class Control : MonoBehaviour
     private bool                timeShown = false;                              //Is currently a text shown
     private int                 showTime = 1;                                   //How long texts should be shown in seconds
 
-    private float               delTimer;                                       //Timer for long button press on X-Button
-    private float               saveTimer;                                      //Timer for long button press on L2-Button
+    private bool                verticalDown = false;                           //Is one of the vertical DPad buttons pressed
 
     private String              savePath;                                       //Absolute path of the save files
     private String              edlPath;                                        //Absolute path of the edl files
@@ -110,6 +111,9 @@ public class Control : MonoBehaviour
             {
                 //Sets the VRMenu
                 vrMenu = c;
+
+                //Sets the menuMover script
+                mm = vrMenu.GetComponent<MenuMover>();
             }
 
             //Check if the currently found canvas is the StartMenu
@@ -133,137 +137,6 @@ public class Control : MonoBehaviour
 #if (UNITY_ANDROID && !UNITY_EDITOR)
         //Check if the A-Button is pressed
         if (Input.GetButtonDown("A-Android"))
-        {
-
-        }
-
-        //Check if the B-Button is pressed
-        if (Input.GetButtonDown("B-Android"))
-        {
-            //Pauses current video
-            pausing = !pausing;
-            mp.SetPaused(pausing);
-        }
-
-        //Check if the X-Button is pressed
-        if (Input.GetButtonDown("X-Android"))
-        {
-            //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) &&
-                hit.transform.gameObject.name == "Highlight(Clone)")
-            {
-                //Iterate through the list of all managed highlights
-                foreach (ManageHighlights.Highlight h in mh.GetList())
-                {
-                    //Check for the currently selected highlight in the list of all managed highlights
-                    if (h.getPos().Contains(hit.transform.position) && h.getTime().Contains(mp.GetCurrentPos()))
-                    {
-                        //Delete selected highlight
-                        mh.DeleteHighlight(h);
-
-                        StartCoroutine(ShowTextForTime("Highlight deleted"));
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                //Clear complete highlight list and delete all highlights at once
-                mh.DeleteAllHighlights();
-
-                StartCoroutine(ShowTextForTime("All Highlights deleted"));
-            }
-        }
-
-        //Check if the Y-Button is pressed
-        if (Input.GetButtonDown("Y-Android"))
-        {
-            //Check if text is already shown
-            if (!timeShown)
-            {
-                //Show the timeline of the currently played video (Current time position|Total video length)
-                ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
-            }
-            else
-            {
-                //Show nothing
-                ShowText(String.Empty);
-            }
-        }
-
-        //Check if the R1-Button is pressed
-        if (Input.GetButton("R1-Android") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
-        {
-            //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) &&
-                hit.transform.gameObject.name != "Highlight(Clone)" && hit.transform.gameObject.name != "HighlightLight(Clone)")
-            {
-                //Get the correct texture coordinates on the video texture
-                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
-                Vector2 coords = hit.textureCoord;
-
-                //Scale the texture coordinates on the whole picture size
-                coords.x *= tex.width;
-                coords.y *= tex.height;
-
-                //Add new parameters to spawn lists
-                Vector3 initPos = mh.CalculateHighlightPosition(hit.point);
-                spawnPosList.Add(initPos);
-                Quaternion initRot = mh.CalculateHighlightRotation();
-                spawnRotList.Add(initRot);
-                spawnTexPosList.Add(coords);
-                spawnTimeList.Add(mp.GetCurrentPos());
-
-                //Set the lastSpawn time position to the current time position
-                lastSpawn = mp.GetCurrentPos();
-
-                //Spawn a highlight to give feedback to the user
-                spawnObjectList.Add(mh.SpawnHighlight(initPos, initRot));
-            }
-        }
-
-        //Check if the R1-Button not pressed anymore
-        if (Input.GetButtonUp("R1-Android") && spawnPosList.Count != 0 && spawnRotList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
-        {
-            //Create highlight
-            mh.AddItem(spawnPosList, spawnRotList, spawnTexPosList, spawnTimeList, "Cut");
-
-            //Empty all spawn parameter lists
-            spawnPosList.Clear();
-            spawnRotList.Clear();
-            spawnTexPosList.Clear();
-            spawnTimeList.Clear();
-
-            //Destroy all spawn highlight objects
-            foreach (GameObject g in spawnObjectList)
-            {
-                Destroy(g);
-            }
-            //Empty the list of spawned highlight objects
-            spawnObjectList.Clear();
-
-            //Notify user that a highlight was created
-            StartCoroutine(ShowTextForTime("Highlight created"));
-        }
-
-        //Check if the L1-Button is pressed
-        if (Input.GetButtonDown("L1-Android"))
-        {
-            //Check if the highlight list is empty
-            if (mh.GetList().Count == 0)
-            {
-                //Show text to the user to inform him that the highlight list is empty
-                StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to create an EDL"));
-            }
-            else
-            {
-                //Create a edl file from the current highlights for the selected video
-                CreateEDL(mp.GetMovieName());
-            }
-        }
-
-        //Check if the R2-Button is pressed
-        if (Input.GetButton("R2-Android"))
         {
             //Check if the StartMenu is enabled and the dropdown list is closed
             if (stMenu.enabled == true && opened == false &&
@@ -336,25 +209,129 @@ public class Control : MonoBehaviour
             }
         }
 
-        //Check if the L"-Button is pressed
-        if (Input.GetButtonDown("L2-Android"))
+        //Check if the B-Button is pressed
+        if (Input.GetButtonDown("B-Android"))
         {
-            //Check if the highlight list is empty
-            if (mh.GetList().Count == 0)
+            //Pauses current video
+            pausing = !pausing;
+            mp.SetPaused(pausing);
+        }
+
+        //Check if the X-Button is pressed
+        if (Input.GetButtonDown("X-Android"))
+        {
+            //Calculate the time position at jumpRange before the current time position
+            double pos = mp.GetCurrentPos().TotalSeconds - jumpRange;
+
+            //Jump to the new time position 
+            mp.JumpToPos(pos);
+        }
+
+        //Check if the Y-Button is pressed
+        if (Input.GetButtonDown("Y-Android"))
+        {
+            //Check if text is already shown
+            if (!timeShown)
             {
-                //Show text to the user to inform him that the highlight list is empty
-                StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to save a file"));
+                //Show the timeline of the currently played video (Current time position|Total video length)
+                ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
             }
             else
             {
-                //Save the current state of all highlights for the selected video
-                Save(mp.GetMovieName());
+                //Show nothing
+                ShowText(String.Empty);
+            }
+        }
+
+        //Check if the R1-Button is pressed
+        if (Input.GetButtonDown("R1-Android"))
+        {
+
+        }
+
+        //Check if the R2-Button is pressed
+        if (Input.GetButton("R2-Android") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
+        {
+            //Check if raycast hits the media sphere
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) &&
+                hit.transform.gameObject.name != "Highlight(Clone)" && hit.transform.gameObject.name != "HighlightLight(Clone)")
+            {
+                //Get the correct texture coordinates on the video texture
+                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                Vector2 coords = hit.textureCoord;
+
+                //Scale the texture coordinates on the whole picture size
+                coords.x *= tex.width;
+                coords.y *= tex.height;
+
+                //Add new parameters to spawn lists
+                Vector3 initPos = mh.CalculateHighlightPosition(hit.point);
+                spawnPosList.Add(initPos);
+                Quaternion initRot = mh.CalculateHighlightRotation();
+                spawnRotList.Add(initRot);
+                spawnTexPosList.Add(coords);
+                spawnTimeList.Add(mp.GetCurrentPos());
+
+                //Set the lastSpawn time position to the current time position
+                lastSpawn = mp.GetCurrentPos();
+
+                //Spawn a highlight to give feedback to the user
+                mh.SpawnHighlight(initPos, initRot);
+            }
+        }
+
+        //Check if the R2-Button not pressed anymore
+        if (Input.GetButtonUp("R2-Android") && spawnPosList.Count != 0 && spawnRotList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
+        {
+            //Create highlight
+            mh.AddItem(spawnPosList, spawnRotList, spawnTexPosList, spawnTimeList, "Cut");
+
+            //Empty all spawn parameter lists
+            spawnPosList.Clear();
+            spawnRotList.Clear();
+            spawnTexPosList.Clear();
+            spawnTimeList.Clear();
+
+            //Notify user that a highlight was created
+            StartCoroutine(ShowTextForTime("Highlight created"));
+        }
+
+        //Check if the L1-Button is pressed
+        if (Input.GetButtonDown("L1-Android"))
+        {
+            //Recenter the VRMenu
+            mm.CenterMenu();
+        }
+
+        //Check if the L"-Button is pressed
+        if (Input.GetButton("L2-Android"))
+        {
+            //Create a temporarily list from the highlight list
+            List<ManageHighlights.Highlight> tempList = mh.GetList();
+
+            //Create a temporarily TimeSpan from the current time position of the active video
+            TimeSpan delTime = mp.GetCurrentPos();
+
+            //Iterate through the temporarily created highlight list copy
+            for (int index = 0; index < tempList.Count; index++)
+            {
+                //Check if this highlight contains the deletion time
+                if (tempList[index].getTime().Contains(delTime))
+                {
+                    //Delete this highlight
+                    mh.DeleteHighlight(mh.GetItem(index));
+                }
             }
         }
 
         //Check if the up DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Android") == 1)
+        if (Input.GetAxis("DPad-Vertical-Android") == 1 && !verticalDown)
         {
+            verticalDown = true;
+
+            //Save the current status of highlights of the active video
+            Save(mp.GetMovieName());
+
             //Check if the currently playing video is at its end
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
             {
@@ -379,7 +356,7 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
-                //
+                //Load the save or edl file for the new active video if existing
                 Load(mp.GetMovieName());
 
                 //Start the new video
@@ -393,8 +370,13 @@ public class Control : MonoBehaviour
         }
 
         //Check if the down DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Android") == -1)
+        if (Input.GetAxis("DPad-Vertical-Android") == -1 && !verticalDown)
         {
+            verticalDown = true;
+
+            //Save the current status of highlights of the active video
+            Save(mp.GetMovieName());
+
             //Check if the currently playing video is at its beginning
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
@@ -419,7 +401,7 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
-                //
+                //Load the save or edl file for the new active video if existing
                 Load(mp.GetMovieName());
 
                 //Start the new video
@@ -430,6 +412,12 @@ public class Control : MonoBehaviour
                 //Rewind to the start of the video
                 StartCoroutine(ShowTextForTime(mp.Rewind()));
             }
+        }
+
+        //Check if the vertical DPad-Buttons are not pressed anymore
+        if (Input.GetAxis("DPad-Vertical-Android") == 0)
+        {
+            verticalDown = false;
         }
 
         //Check if the right DPad-Button is pressed
@@ -446,7 +434,7 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(2);
         }
 
-        //Check if the vertical DPad-Buttons are not pressed anymore
+        //Check if the horizontal DPad-Buttons are not pressed anymore
         if (Input.GetAxis("DPad-Horizontal-Android") == 0)
         {
             //Set the playback speed to normal
@@ -456,139 +444,8 @@ public class Control : MonoBehaviour
         //Check if the A-Button is pressed
         if (Input.GetButtonDown("A-Windows"))
         {
-            
-        }
-
-        //Check if the B-Button is pressed
-        if (Input.GetButtonDown("B-Windows"))
-        {
-            //Pauses current video
-            pausing = !pausing;
-            mp.SetPaused(pausing);
-        }
-
-        //Check if the X-Button is pressed
-        if (Input.GetButtonDown("X-Windows"))
-        {
-            //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
-                hit.transform.gameObject.name == "Highlight(Clone)")
-            {
-                //Iterate through the list of all managed highlights
-                foreach (ManageHighlights.Highlight h in mh.GetList())
-                {
-                    //Check for the currently selected highlight in the list of all managed highlights
-                    if (h.getPos().Contains(hit.transform.position) && h.getTime().Contains(mp.GetCurrentPos()))
-                    {
-                        //Delete selected highlight
-                        mh.DeleteHighlight(h);
-
-                        StartCoroutine(ShowTextForTime("Highlight deleted"));
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                //Clear complete highlight list and delete all highlights at once
-                mh.DeleteAllHighlights();
-
-                StartCoroutine(ShowTextForTime("All Highlights deleted"));
-            }  
-        }
-
-        //Check if the Y-Button is pressed
-        if (Input.GetButtonDown("Y-Windows"))
-        {
-            //Check if text is already shown
-            if (!timeShown)
-            {
-                //Show the timeline of the currently played video (Current time position|Total video length)
-                ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
-            }
-            else
-            {
-                //Show nothing
-                ShowText(String.Empty);
-            }
-        }
-
-        //Check if the R1-Button is pressed
-        if (Input.GetButton("R1-Windows") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
-        {
-            //Check if raycast hits the media sphere
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
-                hit.transform.gameObject.name != "Highlight(Clone)" && hit.transform.gameObject.name != "HighlightLight(Clone)")
-            {
-                //Get the correct texture coordinates on the video texture
-                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
-                Vector2 coords = hit.textureCoord;
-
-                //Scale the texture coordinates on the whole picture size
-                coords.x *= tex.width;
-                coords.y *= tex.height;
-
-                //Add new parameters to spawn lists
-                Vector3 initPos =  mh.CalculateHighlightPosition(hit.point);
-                spawnPosList.Add(initPos);
-                Quaternion initRot = mh.CalculateHighlightRotation();
-                spawnRotList.Add(initRot);
-                spawnTexPosList.Add(coords);
-                spawnTimeList.Add(mp.GetCurrentPos());
-
-                //Set the lastSpawn time position to the current time position
-                lastSpawn = mp.GetCurrentPos();
-
-                //Spawn a highlight to give feedback to the user
-                spawnObjectList.Add(mh.SpawnHighlight(initPos, initRot));
-            }
-        }
-
-        //Check if the R1-Button not pressed anymore
-        if (Input.GetButtonUp("R1-Windows") && spawnPosList.Count != 0 && spawnRotList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
-        {
-            //Create highlight
-            mh.AddItem(spawnPosList, spawnRotList, spawnTexPosList, spawnTimeList, "Cut");
-
-            //Empty all spawn parameter lists
-            spawnPosList.Clear();
-            spawnRotList.Clear();
-            spawnTexPosList.Clear();
-            spawnTimeList.Clear();
-
-            //Destroy all spawn highlight objects
-            foreach (GameObject g in spawnObjectList)
-            {
-                Destroy(g);
-            }
-            //Empty the list of spawned highlight objects
-            spawnObjectList.Clear();
-
-            //Notify user that a highlight was created
-            StartCoroutine(ShowTextForTime("Highlight created"));
-        }
-
-        //Check if the L1-Button is pressed
-        if (Input.GetButtonDown("L1-Windows"))
-        {
-            //Check if the highlight list is empty
-            if (mh.GetList().Count == 0)
-            {
-                //Show text to the user to inform him that the highlight list is empty
-                StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to create an EDL"));
-            }
-            else
-            {
-                //Create a edl file from the current highlights for the selected video
-                CreateEDL(mp.GetMovieName());
-            }
-        }
-
-        //Check if the R2-Button is pressed
-        if (Input.GetButton("R2-Windows"))
-        {
             //Check if the StartMenu is enabled and the dropdown list is closed
-            if (stMenu.enabled == true && opened == false && 
+            if (stMenu.enabled == true && opened == false &&
                 Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 switch (hit.transform.gameObject.name)
@@ -629,7 +486,7 @@ public class Control : MonoBehaviour
             }
 
             //Check if the StartMenu is enabled and the dropdown list is opened
-            if (stMenu.enabled == true && opened == true && 
+            if (stMenu.enabled == true && opened == true &&
                 Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
             {
                 //Check for all videos if the shown item is part of possible videos
@@ -658,25 +515,133 @@ public class Control : MonoBehaviour
             }
         }
 
-        //Check if the L"-Button is pressed
-        if (Input.GetButtonDown("L2-Windows"))
+        //Check if the B-Button is pressed
+        if (Input.GetButtonDown("B-Windows"))
         {
-            //Check if the highlight list is empty
-            if (mh.GetList().Count == 0)
+            //Pauses current video
+            pausing = !pausing;
+            mp.SetPaused(pausing);
+        }
+
+        //Check if the X-Button is pressed
+        if (Input.GetButtonDown("X-Windows"))
+        {
+            //Calculate the time position at jumpRange before the current time position
+            double pos = mp.GetCurrentPos().TotalSeconds - jumpRange;
+
+            //Jump to the new time position 
+            mp.JumpToPos(pos);
+        }
+
+        //Check if the Y-Button is pressed
+        if (Input.GetButtonDown("Y-Windows"))
+        {
+            //Check if text is already shown
+            if (!timeShown)
             {
-                //Show text to the user to inform him that the highlight list is empty
-                StartCoroutine(ShowTextForTime("You need to spawn Highlights in order to save a file"));
+                //Show the timeline of the currently played video (Current time position|Total video length)
+                ShowText(mp.GetCurrentPos().ToString() + " | " + mp.GetMovieLength().ToString());
             }
             else
             {
-                //Save the current state of all highlights for the selected video
-                Save(mp.GetMovieName());
+                //Show nothing
+                ShowText(String.Empty);
+            }
+        }
+
+        //Check if the R1-Button is pressed
+        if (Input.GetButtonDown("R1-Windows"))
+        {
+
+        }
+
+        //Check if the R2-Button is pressed
+        if (Input.GetButton("R2-Windows") && mp.GetCurrentPos().Subtract(lastSpawn).TotalMilliseconds >= spawnRate)
+        {
+            //Check if raycast hits the media sphere
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit) && 
+                hit.transform.gameObject.name != "Highlight(Clone)" && hit.transform.gameObject.name != "HighlightLight(Clone)")
+            {
+                //Get the correct texture coordinates on the video texture
+                Texture tex = hit.transform.gameObject.GetComponent<Renderer>().material.mainTexture;
+                Vector2 coords = hit.textureCoord;
+
+                //Scale the texture coordinates on the whole picture size
+                coords.x *= tex.width;
+                coords.y *= tex.height;
+
+                //Add new parameters to spawn lists
+                Vector3 initPos =  mh.CalculateHighlightPosition(hit.point);
+                spawnPosList.Add(initPos);
+                Quaternion initRot = mh.CalculateHighlightRotation();
+                spawnRotList.Add(initRot);
+                spawnTexPosList.Add(coords);
+                spawnTimeList.Add(mp.GetCurrentPos());
+
+                //Set the lastSpawn time position to the current time position
+                lastSpawn = mp.GetCurrentPos();
+
+                //Spawn a highlight to give feedback to the user
+                mh.SpawnHighlight(initPos, initRot);
+            }
+        }
+
+        //Check if the R2-Button not pressed anymore
+        if (Input.GetButtonUp("R2-Windows") && spawnPosList.Count != 0 && spawnRotList.Count != 0 && spawnTexPosList.Count != 0 && spawnTimeList.Count != 0)
+        {
+            //Create highlight
+            mh.AddItem(spawnPosList, spawnRotList, spawnTexPosList, spawnTimeList, "Cut");
+
+            //Empty all spawn parameter lists
+            spawnPosList.Clear();
+            spawnRotList.Clear();
+            spawnTexPosList.Clear();
+            spawnTimeList.Clear();
+
+            //Notify user that a highlight was created
+            StartCoroutine(ShowTextForTime("Highlight created"));
+        }
+
+        //Check if the L1-Button is pressed
+        if (Input.GetButtonDown("L1-Windows"))
+        {
+            //Recenter the VRMenu
+            mm.CenterMenu();
+        }
+
+        //Check if the L"-Button is pressed
+        if (Input.GetButton("L2-Windows"))
+        {
+            Debug.Log("Löschen aktiv");
+
+            //Create a temporarily list from the highlight list
+            List<ManageHighlights.Highlight> tempList = mh.GetList();
+
+            //Create a temporarily TimeSpan from the current time position of the active video
+            TimeSpan delTime = mp.GetCurrentPos();
+
+            //Iterate through the temporarily created highlight list copy
+            for (int index = 0; index < tempList.Count; index++)
+            {
+                //Check if this highlight contains the deletion time
+                if (tempList[index].getTime().Contains(delTime))
+                {
+                    Debug.Log("Highlight wurde gelöscht");
+
+                    //Delete this highlight
+                    mh.DeleteHighlight(mh.GetItem(index));
+                }
             }
         }
 
         //Check if the up DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Windows") == 1)
+        if (Input.GetAxis("DPad-Vertical-Windows") == 1 && !verticalDown)
         {
+            verticalDown = true;
+
+            //Save the current status of highlights of the active video
+            Save(mp.GetMovieName());
+
             //Check if the currently playing video is at its end
             if ((mp.GetMovieLength().TotalSeconds - mp.GetCurrentPos().TotalSeconds) < 5)
             {
@@ -701,7 +666,7 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
-                //
+                //Load the save or edl file for the new active video if existing
                 Load(mp.GetMovieName());
 
                 //Start the new video
@@ -715,8 +680,13 @@ public class Control : MonoBehaviour
         }
 
         //Check if the down DPad-Button is pressed
-        if (Input.GetAxis("DPad-Vertical-Windows") == -1)
+        if (Input.GetAxis("DPad-Vertical-Windows") == -1 && !verticalDown)
         {
+            verticalDown = true;
+
+            //Save the current status of highlights of the active video
+            Save(mp.GetMovieName());
+
             //Check if the currently playing video is at its beginning
             if (mp.GetCurrentPos().TotalSeconds < 5)
             {
@@ -741,7 +711,7 @@ public class Control : MonoBehaviour
                         break;
                     }
                 }
-                //
+                //Load the save or edl file for the new active video if existing
                 Load(mp.GetMovieName());
 
                 //Start the new video
@@ -752,6 +722,12 @@ public class Control : MonoBehaviour
                 //Rewind to the start of the video
                 StartCoroutine(ShowTextForTime(mp.Rewind()));
             }
+        }
+
+        //Check if the vertical DPad-Buttons are not pressed anymore
+        if (Input.GetAxis("DPad-Vertical-Windows") == 0)
+        {
+            verticalDown = false;
         }
 
         //Check if the right DPad-Button is pressed
@@ -768,7 +744,7 @@ public class Control : MonoBehaviour
             mp.SetPlaybackSpeed(2);
         }
 
-        //Check if the vertical DPad-Buttons are not pressed anymore
+        //Check if the horizontal DPad-Buttons are not pressed anymore
         if (Input.GetAxis("DPad-Horizontal-Windows") == 0)
         {
             //Set the playback speed to normal
@@ -878,9 +854,9 @@ public class Control : MonoBehaviour
         String filePath = edlPath + "/" + video + ".edl";
 
         //Check if file is already created
-        if (!File.Exists(filePath))
+        if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
         {
-
+            Debug.Log("No file found. New file will be created.");
         }
         else
         {
@@ -911,19 +887,21 @@ public class Control : MonoBehaviour
                     foreach (String str in body)
                     {
                         //All words of the analysed edl line seperated from each other
-                        String[] words = str.Split(whitespace);
-                        
+                        String[] words = str.Split(whitespace, StringSplitOptions.RemoveEmptyEntries);
+
                         switch(words[0])
                         {
                             //Check if the currently analysed line is the first line of the edl file
                             case "TITLE:":
+                                Debug.Log("Title will be ignored");
                                 break;
                             //Check if the currently analysed line is the second line of the edl file
                             case "FCM:":
+                                Debug.Log("Frame Mode will be ignored");
                                 break;
                             //Check if the currently analysed line is a FROM CLIP NAME: <videofile>
                             case "*":
-                                extrVideo = words[4];
+                                extrVideo = words[4].Substring(0, words[4].IndexOf('.'));
                                 break;
                             //Check if the currently analysed line is a effect line (Those are currently ignored)
                             case "M2":
@@ -937,16 +915,22 @@ public class Control : MonoBehaviour
                     }
 
                     //Check if the new highlight/chain is for the currently active video
-                    if (extrVideo.Substring(0, extrVideo.LastIndexOf(".")).ToUpper() == video.ToUpper())
+                    if (extrVideo.ToUpper() == video.ToUpper())
                     {
+                        //Parse the TimeSpan string to a valid TimeSpan
+                        parameters[3] = parameters[3].Substring(0, parameters[3].LastIndexOf(':')) + "." + parameters[3].Substring(parameters[3].LastIndexOf(':') + 1);
+
                         //Set currentTime to the start time of the highlight/chain
                         TimeSpan currentTime = TimeSpan.Parse(parameters[3]);
 
                         //Add the next time position to the list of all time positions of the highlight
                         hlTime.Add(currentTime);
 
+                        //Parse the TimeSpan string to a valid TimeSpan
+                        parameters[4] = parameters[4].Substring(0, parameters[4].LastIndexOf(':')) + "." + parameters[4].Substring(parameters[4].LastIndexOf(':') + 1);
+
                         //While the line has not ended spawn new highlights
-                        while(currentTime < TimeSpan.Parse(parameters[4]))
+                        while (currentTime < TimeSpan.Parse(parameters[4]))
                         {
                             //Set currentTime to the next time position (currentTime + 0.5 seconds)
                             currentTime.Add(TimeSpan.FromMilliseconds(spawnRate));
@@ -954,10 +938,10 @@ public class Control : MonoBehaviour
                             //Add the next time position to the list of all time positions of the highlight
                             hlTime.Add(currentTime);
                         }
+                        Debug.Log("Highlight erstellt");
+                        //Create a highlight from the parameters
+                        mh.AddItem(new List<Vector3>(), new List<Quaternion>(), new List<Vector2>(), hlTime, parameters[2]);
                     }
-
-                    //Create a highlight from the parameters
-                    mh.AddItem(new List<Vector3>(), new List<Quaternion>(), new List<Vector2>(), hlTime, parameters[2]);
 
                     //Clear the complete body after creating the necessary highlights
                     body.Clear();
@@ -1002,6 +986,13 @@ public class Control : MonoBehaviour
     //Saves the highlights of the video into a *.hl file
     public void Save(String video)
     {
+        //Check if the video name has a file suffix
+        if (video.Contains('.'))
+        {
+            //Remove the suffix of the video name (exp.: ".mp4")
+            video = video.Substring(0, video.LastIndexOf('.'));
+        }
+
         //Show the user it started the saving process
         StartCoroutine(ShowTextForTime(video + " is saving..."));
 
@@ -1090,6 +1081,9 @@ public class Control : MonoBehaviour
 
             //Show the user it finished the saving process
             StartCoroutine(ShowTextForTime(video + " is saved"));
+
+            //Additionally creates the edl file for the current save file
+            CreateEDL(video);
         }
         else
         {
@@ -1101,6 +1095,16 @@ public class Control : MonoBehaviour
     //Load the previously saved highlights for the active video
     public void Load(String video)
     {
+        //Check if the video name has a file suffix
+        if (video.Contains('.'))
+        {
+            //Remove the suffix of the video name (exp.: ".mp4")
+            video = video.Substring(0, video.LastIndexOf('.'));
+        }
+
+        //Clear a possibly pre-existing highlight list and destroy all showed highlights
+        mh.DeleteAllHighlights();
+
         //Show the user it started the loading process
         StartCoroutine(ShowTextForTime(video + " is loading..."));
 
@@ -1108,7 +1112,7 @@ public class Control : MonoBehaviour
         String filePath = savePath + "/" + video + ".hl";
 
         //Check if file is already created
-        if (!File.Exists(filePath))
+        if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
         {
             //Instead try to open a edl file
             OpenEDL(video);
@@ -1279,12 +1283,8 @@ public class Control : MonoBehaviour
         //Iterate through all direct children of the menu
         foreach (Transform child in menu.transform)
         {
-            //Check if the current found child is the DisconnectMenu
-            if (child.name != "DisconnectMenu")
-            {
-                //Enable/Disable the collider on the buttons of the menu
-                child.GetComponent<Collider>().enabled = status;
-            }
+            //Enable/Disable the collider on the buttons of the menu
+            child.GetComponent<Collider>().enabled = status;
         }
 
         //Enable/Disable this menu

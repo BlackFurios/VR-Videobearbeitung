@@ -5,100 +5,31 @@ using UnityEngine;
 
 public class HighlightLifetimer : MonoBehaviour
 {
-    private List<Vector3>       posList = new List<Vector3>();          //List of all world positions of the represented highlight
-    private List<Quaternion>    rotList = new List<Quaternion>();       //List of all world rotations of the represented highlight
-    private List<TimeSpan>      timeList = new List<TimeSpan>();        //List of all time positions of the represented highlight
+    float             maxLifeTime         = 0.75f;          //The maximal time in seconds this highlight exists
+    float             currentLifeTime     = 0;              //The current time in seconds this highlight exists
 
-    private MediaPlayer         mp;                                     //
+    Color color;                                            //Color variable to define the new opacity value
 
-    private int                 index = 0;                              //The current index at which point this highlight representation is in the lists
-    //private float               lerpTime = 0.1f;                        //The time period in seconds in which the object moves/rotates between two waypoints
-    private float               currentTime = 0f;                       //The current time during the lerpTime
-
-	// Use this for initialization
+	//Use this for initialization
 	void Start ()
     {
-        Debug.Log("Highlight ab " + Time.time + " erzeugt.");
+        //Set the initial color the current color (including opacity)
+        color = GetComponent<MeshRenderer>().material.color;
 
-        //Starts the highlight movement
-        StartCoroutine(MoveHighlight());
+        //Destroy this highlight after its maximal life time
+        Destroy(this.gameObject, maxLifeTime);
     }
 	
-	// Update is called once per frame
+	//Update is called once per frame
 	void Update ()
     {
-        
-    }
+        //Add the deltaTime to the current life time of this highlight
+        currentLifeTime += Time.deltaTime;
 
-    //Manages the path of the highlight object
-    IEnumerator MoveHighlight ()
-    {
-        //Infinite loop
-        while (true)
-        {
-            if (mp.GetCurrentPos() == timeList[index])
-            {
-                //Set the current needed time for the lerp to the next time interval in milliseconds
-                currentTime = timeList[index + 1].Subtract(timeList[index]).Milliseconds / 1000;
+        //Change the opacity of the new color according to the life time
+        color.a = Mathf.Lerp(1f, 0f, currentLifeTime / maxLifeTime);
 
-                //Starts the transformation of the highlight object via lerp
-                yield return StartCoroutine(LerpToTransform());
-
-                //Check if the indey is the last possible index of the list
-                if (index >= posList.Count - 2)
-                {
-                    //Destroys the highlight object
-                    Destroy(this.gameObject);
-                }
-
-                //Increase the index by one
-                index++;
-
-                //Wait for the time period the lerp needs to transform the highlight object
-                yield return new WaitForSeconds(currentTime);
-            }
-        }
-    }
-
-    //Transforms (moves, rotates) the highlight object
-    IEnumerator LerpToTransform ()
-    {
-        float timeStep = 0.0f;
-
-        //Loop until the lerp is completed
-        while (timeStep < 1.0f)
-        {
-            //Add the next step in the lerp
-            timeStep += Time.deltaTime / currentTime;
-
-            //Lerp the position and rotation between the current and next transform
-            transform.position = Vector3.Lerp(posList[index], posList[index + 1], timeStep);
-            transform.rotation = Quaternion.Lerp(rotList[index], rotList[index + 1], timeStep);
-            yield return null;
-        }
-    }
-    
-    //Sets the given world position list of the highlight as variable
-    public void SetPosList(List<Vector3> initPosList)
-    {
-        posList = initPosList;
-    }
-
-    //Sets the given world rotation list of the highlight as variable
-    public void SetRotList(List<Quaternion> initRotList)
-    {
-        rotList = initRotList;
-    }
-
-    //Sets the given world rotation list of the highlight as variable
-    public void SetTimeList(List<TimeSpan> initTimeList)
-    {
-        timeList = initTimeList;
-    }
-
-    //Sets the given media player instance
-    public void SetMediaPlayer(MediaPlayer val)
-    {
-        mp = val;
+        //Change this highlights color with the new color
+        GetComponent<MeshRenderer>().material.color = color;
     }
 }

@@ -29,8 +29,6 @@ public class ManageHighlights : MonoBehaviour
         private String              type;                                       //The type of the highlight
         private int                 index;                                      //
 
-        public GameObject     obj;                                              //List of currently shown highlights
-
         public Highlight(List<Vector3> initPos, List<Quaternion> initRot, 
             List<Vector2> initTexPos, List<TimeSpan> initTime, String initType) //Constructor of the Highlight class
         {
@@ -73,25 +71,13 @@ public class ManageHighlights : MonoBehaviour
             return type;
         }
 
-        //Returns the representing object of the highlight
-        public GameObject getObj()
-        {
-            return obj;
-        }
-
-        //Sets the representing object of the highlight
-        public void setObj(GameObject val)
-        {
-            obj = val;
-        }
-
-        //
+        //Return the current index of the highlight
         public int getIndex()
         {
             return index;
         }
 
-        //
+        //Sets the current index of the highlight
         public void setIndex(int val)
         {
             index = val;
@@ -122,28 +108,32 @@ public class ManageHighlights : MonoBehaviour
         //Iterate through the list of all highlights
         foreach (Highlight h in hList)
         {
-            if (mp.GetCurrentPos() > h.getTime()[h.getIndex()])
+            //Check if the player time is maximal 1 second after the highlights time position
+            if (mp.GetCurrentPos() > h.getTime()[h.getIndex()] && mp.GetCurrentPos() < h.getTime()[h.getIndex()].Add(TimeSpan.FromSeconds(1)))
             {
-                Debug.Log("Highlight erzeugt ab " + h.getTime()[h.getIndex()]);
-                if (h.getObj() == null)
+                //Check if this highlight has no world positions (import from edl file)
+                if (h.getPos().Count == 0)
                 {
-                    h.setObj(SpawnHighlight(h.getPos()[h.getIndex()], h.getRot()[h.getIndex()]));
-                }
-                else if (h.getIndex() == (h.getPos().Count - 1))
-                {
-                    DestroyImmediate(h.getObj());
-
-                    h.setObj(null);
-
-                    h.setIndex(-1);
+                    //Show text to user to give feedback
+                    StartCoroutine(ShowTextForTime("!!!"));
                 }
                 else
                 {
-                    h.getObj().transform.position = h.getPos()[h.getIndex()];
-                    h.getObj().transform.rotation = h.getRot()[h.getIndex()];
-                }
+                    //Check if the end of the world position list is reached
+                    if (h.getIndex() == (h.getPos().Count - 1))
+                    {
+                        //Reset the index variable
+                        h.setIndex(0);
+                    }
+                    else
+                    {
+                        //Spawn a new highlight gameObject with the current position and rotation
+                        SpawnHighlight(h.getPos()[h.getIndex()], h.getRot()[h.getIndex()]);
 
-                h.setIndex(h.getIndex() + 1);
+                        //Increase the highlights index by one
+                        h.setIndex(h.getIndex() + 1);
+                    }
+                }
             }
         }
     }
@@ -221,18 +211,21 @@ public class ManageHighlights : MonoBehaviour
         return hList;
     }
 
-    //Empties the list of all highlights and destroys all highlight gameObjects
+    //Deletes and clears the complete highlight list
     public void DeleteAllHighlights()
     {
-        //Check if highlights were already spawned
-        if (GetList().Count != 0)
+        //Create temporary list to delete the highlight list
+        List<Highlight> tempList = GetList();
+
+        //Iterate through the temporary list (count of all highlights)
+        for (int index = 0; index < tempList.Count; index++)
         {
-            //Iterate through the list of all managed highlights
-            foreach (Highlight h in hList)
-            {
-                DeleteHighlight(h);
-            }
+            //Delete the currently selected highlight from the list
+            DeleteHighlight(GetItem(index));
         }
+
+        //Clears the highlight list of every value
+        GetList().Clear();
     }
 
     //Removes highlight from the list of managed highlights
@@ -241,29 +234,8 @@ public class ManageHighlights : MonoBehaviour
         //Check if the currently selected highlight is a real highlight
         if (current != null)
         {
-            //Check if this highlight has a gameObject
-            if (current.getObj() != null)
-            {
-                //Destroy the gameObject of this highlight
-                DestroyImmediate(current.getObj());
-            }
-
             //Delete highlight from list and destroy the highlight
             hList.RemoveAt(hList.IndexOf(current));
-        }
-    }
-
-    //Returns true if two given TimeSpans are within a timely radius to each other
-    bool AroundTimePosition(TimeSpan a, TimeSpan b, double radius)
-    {
-        //Check if the time distance between the two given TimeSpans is shorter than the given radius time
-        if (a.Subtract(b).TotalMilliseconds < radius && b.Subtract(a).TotalMilliseconds < radius)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
         }
     }
 
